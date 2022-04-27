@@ -1,4 +1,4 @@
-"tweet","avg_perceived_copartisan","avg_sentiment","poli_affil","is_moderate","co_cross"
+"tweet","avg_perceived","avg_sentiment","poli_affil","is_moderate","co_cross"
 1,4.4444444,3.5999999,"left","no","co"
 1,4.5,3.625,"right","no","co"
 1,4.5,3.1666667,"left","yes","co"
