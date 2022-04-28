@@ -16,15 +16,24 @@ d <- read.csv('data/strategic_signaling_data_long.csv')
 ```{r}
 
 label_names <- c('no' = 'Group Overall', 'yes' = 'Moderates Only')
-
-left_right_plot <- d %>% ggplot(aes(x=avg_perceived, y=avg_sentiment))+
+labelsx = c("ex","ex1")
+d$avg_perceived_centered = d$avg_perceived-4
+left_right_plot <- d %>%
+  filter(co_cross=="co") %>% 
+  ggplot(aes(x=avg_perceived_centered, y=avg_sentiment))+
   geom_smooth(method='lm', se=TRUE, aes(color=poli_affil))+
-  geom_point()+
+  geom_point(alpha = 0.1, aes(colour = factor(poli_affil)))+
+  theme_bw()+
+  theme(plot.title = element_text(hjust=0.5,size = rel(1.5)),
+        axis.title.y = element_text(face="bold",  size=14),
+        axis.text.x  = element_text( vjust=0.5, size=18),
+        axis.text.y  = element_text( vjust=0.5, size=12),
+        axis.title.x = element_text( vjust=0.5, size=18)) +
   facet_wrap(~is_moderate, labeller=as_labeller(label_names), ncol=1)+
   scale_color_manual(labels = c("Liberal", "Conservative"), values = c("blue", "red"))+
-  labs(x = "Averaged Perceived Copartisanship", y = "Average Sentiment", color = "Political Affiliation")+
-  scale_x_continuous(breaks=c(1, 7),
-                     labels=c("1" = "Least Copartisan", "7" = "Most Copartisan"))+
+  labs(x = "Perceived Copartisanship", y = "Like Tweet", color = "Political Affiliation")+
+   annotate("text", x=0.15, y=1.2, label= "Moderate") + 
+  annotate("text", x=2.93, y=1.2, label= "Extreme") + 
   theme_bw();left_right_plot
 
 
