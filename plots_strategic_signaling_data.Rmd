@@ -3,13 +3,12 @@ title: "Visualization of Strategic Identity Signaling Data"
 output: html_document
 ---
 
+
+
 ```{r}
+
 library(ggplot2)
 library(dplyr)
-```
-
-
-```{r}
 d <- read.csv('data/strategic_signaling_data_long.csv')
 ```
 
@@ -20,14 +19,16 @@ label_names <- c('no' = 'Group Overall', 'yes' = 'Moderates Only')
 
 left_right_plot <- d %>% ggplot(aes(x=avg_perceived, y=avg_sentiment))+
   geom_smooth(method='lm', se=TRUE, aes(color=poli_affil))+
+  geom_point()+
   facet_wrap(~is_moderate, labeller=as_labeller(label_names), ncol=1)+
   scale_color_manual(labels = c("Liberal", "Conservative"), values = c("blue", "red"))+
   labs(x = "Averaged Perceived Copartisanship", y = "Average Sentiment", color = "Political Affiliation")+
   scale_x_continuous(breaks=c(1, 7),
                      labels=c("1" = "Least Copartisan", "7" = "Most Copartisan"))+
-  theme_bw()
+  theme_bw();left_right_plot
 
-ggsave('figures/avg_sentiment_avg_perceived.jpg')
+
+#ggsave('figures/avg_sentiment_avg_perceived.jpg')
 
 left_right_plot
 
