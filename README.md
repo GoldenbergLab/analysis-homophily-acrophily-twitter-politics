@@ -32,6 +32,6 @@ Due to computational constraints, the probability difference simulation in parti
 
 The analysis directory contains all analysis and evaluation of the data from "Strategic Identity Signaling" as well as analysis and evaluation of the processed data.
 
-### Plots
+### Create Figures
 
 Scripts to create visualizations based on processed data can be found here.
