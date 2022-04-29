@@ -34,4 +34,4 @@ The analysis directory contains all analysis and evaluation of the data from "St
 
 ### Create Figures
 
-Scripts to create visualizations based on processed data can be found here.
+Scripts to create visualizations based on processed data can be found in this directory.
