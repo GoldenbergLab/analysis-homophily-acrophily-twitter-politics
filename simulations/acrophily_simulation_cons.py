@@ -21,23 +21,6 @@ import scipy
 import statsmodels.stats.proportion as prop
 import pickle
 
-# Print statement to confirm script is running on grid:
-print('reading in user data', flush=True)
-
-# Read in data:
-users = pd.read_csv('data/users_ratings.csv')
-users = users.set_index('userid')
-
-# Get users with at least 5 original tweets:
-u = users[users['orig_total_count']>=5]
-
-
-# Read in retweet network df:
-rt = pd.read_csv('data/rt_network.csv')
-
-# Print confirmation that data was read for grid:
-print('data read', flush=True)
-
 # Returns margin of error for mean of data array:
 def mean_confidence_interval(data, confidence=0.95):
     
@@ -228,6 +211,23 @@ def repeat_base_rating(r,u,baseline,direction='any',thresh=5,n=5):
         peer_prob_higher_ci.append(pphc)
         
     return(ego_rating,peer_rating,np.mean(peer_prob_higher),np.mean(peer_prob_higher_ci))
+
+# Print statement to confirm script is running on grid:
+print('reading in user data', flush=True)
+
+# Read in data:
+users = pd.read_csv('../data/users_ratings.csv')
+users = users.set_index('userid')
+
+# Get users with at least 5 original tweets:
+u = users[users['orig_total_count']>=5]
+
+
+# Read in retweet network df:
+rt = pd.read_csv('../data/rt_network.csv')
+
+# Print confirmation that data was read for grid:
+print('data read', flush=True)
 
 
 # Simulating retweet network for right-leaning individuals:
