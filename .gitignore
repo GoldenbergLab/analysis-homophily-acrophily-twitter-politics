@@ -199,3 +199,6 @@ flycheck_*.el
 
 # Data folder
 data/
+
+# Figures folder
+Figures/
