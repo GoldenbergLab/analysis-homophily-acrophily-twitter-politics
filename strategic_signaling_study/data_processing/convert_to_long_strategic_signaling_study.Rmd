@@ -1,0 +1,61 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+
+```{r}
+# Importing libraries:
+library(dplyr)
+library(tidyr)
+```
+
+
+## Converting strategic identity signaling data to long format:
+
+```{r}
+# Reading in strategic covert signaling data:
+df <- read.csv("../data/Covert-stage1-alltweetsel.csv")
+
+# Filtering out any tweet perceived as moderate by any of the groups:
+df <- df %>% filter(avg_libcons_left != 4.0 & avg_libcons_right != 4.0 & avg_libcons_ml != 4.0 & avg_libcons_mr != 4.0)
+
+# Using only averages from target groups:
+df <- df[,c('tweet', 'avg_libcons_left', 'avg_libcons_right', 'avg_libcons_ml', 'avg_libcons_mr', 'avg_feel_left', 'avg_feel_right', 'avg_feel_ml', 'avg_feel_mr')]
+
+# Converting avg_libcons variables to long format:
+df_long_avg_libcons <- df %>% 
+  pivot_longer(cols=2:5, names_to='poli_avg_libcons', values_to='avg_libcons') %>%
+  select(tweet, poli_avg_libcons, avg_libcons)
+
+# Converting avg_feel variables to long format:
+df_long_avg_feel <- df %>% 
+  pivot_longer(cols=6:9, names_to='poli_avg_feel', values_to='avg_feel') %>%
+  select(tweet, poli_avg_feel, avg_feel)
+
+# Combining avg feel and avg perception variables into one dataframe:
+df_long <- cbind(df_long_avg_libcons, df_long_avg_feel[,2:3])
+
+# Creating variable indicating general political affiliation
+df_long$poli_affil <- ifelse((df_long$poli_avg_libcons == 'avg_libcons_left' | df_long$poli_avg_libcons == 'avg_libcons_ml'), 'left', 'right')
+
+# Creating variable indicating whether rating is from moderate group or not:
+df_long$is_moderate <- ifelse(df_long$poli_avg_libcons == 'avg_libcons_ml' | df_long$poli_avg_libcons == 'avg_libcons_mr', 'yes', 'no')
+
+# Removing political affiliation labels for avg_libcons and avg_feel variables:
+df_long <- df_long %>% select(-c(poli_avg_libcons, poli_avg_feel))
+
+# Rescaling average perceived political leaning for left-wing groups to match conservative scale:
+df_long$avg_libcons <- ifelse(df_long$poli_affil == 'left', 8 - df_long$avg_libcons, df_long$avg_libcons)
+
+# Creating variable indicating whether tweet was co-partisan:
+df_long$co_cross <- ifelse(df_long$avg_libcons > 4.0, 'co', 'cross')
+
+# Renaming variables for clarity:
+df_long <- df_long %>% 
+  rename(avg_perceived = avg_libcons) %>%
+  rename(avg_sentiment = avg_feel)
+
+# Saving result:
+write.csv(df_long, '../data/strategic_signaling_data_long.csv', row.names=FALSE)
+```
