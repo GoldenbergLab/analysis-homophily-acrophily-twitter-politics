@@ -196,9 +196,3 @@ flycheck_*.el
 #################################################
 # PROJECT SPECIFIC IGNORABLES
 #################################################
-
-# Data folder
-data/
-
-# Figures folder
-Figures/
