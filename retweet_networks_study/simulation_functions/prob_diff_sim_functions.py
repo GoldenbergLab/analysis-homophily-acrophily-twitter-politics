@@ -72,10 +72,6 @@ def preprocess_data(users_df, rt_df, orient, frac_data=False, frac_start=None, f
 
         print('Subsetting data into specified fraction of users.', flush=True)
 
-        # Assert conditions:
-        assert isinstance(frac_start, float) and isinstance(frac_end, float), "Fractions of data must be float type"
-        assert frac_start >= 0.0 and frac_end > frac_start, "Must be defined fraction of data"
-
         # Get unique user ID values:
         all_users = np.unique(rt_df['userid'].values)
 
@@ -164,6 +160,7 @@ def get_sim_df(users_df, rt_df, orient, n=100):
 
         # Get homophily ratings:
         rt_df_subset = get_homophily_ratings_df(rt_df)
+        print(len(rt_df_subset))
 
         # Create columns counting whether peer is more extreme than ego in each condition:
         rt_df_subset['is_more_extreme_homoph'] = get_more_extreme_count(rt_df_subset['orig_rating_ego'],
@@ -218,11 +215,4 @@ def run_sim(orient, frac_data=False, frac_start=0.0, frac_end=0.1):
     sim_df = get_sim_df(users_df, rt_df_frac, orient)
     prob_diff_df = get_prob_diff_df(sim_df)
     save_prob_diff_df(prob_diff_df, orient, frac_start, frac_end)
-
-# Running simulation for both liberals and conservatives on full datasets:
-if __name__ == '__main__':
-    orient = 'left'
-    run_sim(orient)
-
-    orient = 'right'
-    run_sim(orient, frac_data)
+    
