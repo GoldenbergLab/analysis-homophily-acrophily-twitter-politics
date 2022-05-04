@@ -1,21 +1,20 @@
 import pandas as pd
+pd.options.mode.chained_assignment = None
+
 import numpy as np
 
-from sim_data_prep import TwitterDataProcessor
+from sims_data_prep import TwitterDataProcessor
 
-class ProbDiffSim:
+# Create probability difference simulation class that inherits processed data from TwitterDataProcessor:
+class ProbDiffSim(TwitterDataProcessor):
 
     def __init__(self, orient, frac_data=False, frac_start=0.0, frac_end=0.1):
-        self.data_processor = TwitterDataProcessor(orient, frac_data, frac_start, frac_end)
-        self.rt_df = self.data_processor.get_retweet_data()
-        self.orient = orient
-        self.frac_data = frac_data
-        self.frac_start = frac_start
-        self.frac_end = frac_end
-
+        TwitterDataProcessor.__init__(self, orient, frac_data, frac_start, frac_end)
+        self.rt_df = self.get_retweet_data()
 
     # Run homophily simulation and append homophily peer ratings to new column in dataframe:
-    def get_homophily_df(self, limit=0.7) -> pd.DataFrame:
+    def get_homophily_df(self, limit=0.7):
+
         # Randomize order of dataset for simulation trial:
         self.rt_df = self.rt_df.sample(frac=1)
 
@@ -71,6 +70,7 @@ class ProbDiffSim:
 
             # Get homophily ratings:
             self.get_homophily_df()
+            print(self.homophily_df.head(3))
 
             # Create columns counting whether peer is more extreme than ego in each condition:
             self.homophily_df['is_more_extreme_homoph'] = get_more_extreme_count(self.homophily_df['orig_rating_ego'],
@@ -79,8 +79,7 @@ class ProbDiffSim:
                                                                           self.homophily_df['orig_rating_peer'])
 
             # Append results to dataframe:
-            self.sim_df = self.sim_df.append(self.homophily_df, ignore_index=True)
-            print(len(self.homophily_df), flush=True)
+            self.sim_df = pd.concat([self.sim_df, self.homophily_df], axis=0, ignore_index=True)
 
         print('Simulation complete. Creating dataframe.', flush=True)
 
