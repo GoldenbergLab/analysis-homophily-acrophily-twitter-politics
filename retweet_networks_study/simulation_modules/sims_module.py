@@ -1,19 +1,27 @@
+import os
+
 import pandas as pd
 pd.options.mode.chained_assignment = None
 
 import numpy as np
 
+import time
+
 from sims_data_prep import TwitterDataProcessor
 
-# Create probability difference simulation class that inherits processed data from TwitterDataProcessor:
+
+# Create probability difference simulation class:
 class ProbDiffSim(TwitterDataProcessor):
 
-    def __init__(self, orient, frac_data=False, frac_start=0.0, frac_end=0.1):
+    
+    # Inherit processed data from data prep class:
+    def __init__(self, orient, frac_data=False, frac_start=None, frac_end=None):
         TwitterDataProcessor.__init__(self, orient, frac_data, frac_start, frac_end)
         self.rt_df = self.get_retweet_data()
 
+
     # Run homophily simulation and append homophily peer ratings to new column in dataframe:
-    def get_homophily_df(self, limit=0.7):
+    def get_homophily_df(self):
 
         # Randomize order of dataset for simulation trial:
         self.rt_df = self.rt_df.sample(frac=1)
@@ -25,8 +33,12 @@ class ProbDiffSim(TwitterDataProcessor):
         # Initialize list of closest peers based on homophily simulation:
         closest_peers = []
 
-        # For each ego rating in the first 70% of data, match ego with closest peer available based on min absolute difference:
-        for ego_rating in ego_ratings[0:int(len(ego_ratings) * limit)]:
+        # Take 70% subset of ego ratings:
+        ego_ratings_subset = ego_ratings[0:int(0.7*len(ego_ratings))]
+
+        # For each ego rating in subset:
+        for ego_rating in ego_ratings_subset:
+
             # Find absolute differences:
             abs_diffs = np.abs(peer_ratings - ego_rating)
 
@@ -50,12 +62,12 @@ class ProbDiffSim(TwitterDataProcessor):
 
 
     # Creates dataframe with user id and probability differences after n trials:
-    def get_sim_df(self, n=100):
+    def get_sim_df(self):
 
         # Vectorized lambda function to count whether peer rating is greater than ego rating:
-        get_more_extreme_count = np.vectorize(lambda x, y: 1 if y > x else 0)
+        count_more_extreme = np.vectorize(lambda x, y: 1 if y > x else 0)
 
-        # Initialize dataframe that keeps track of whether a peer is more extreme in homophily and empirical conditions:
+        # Initialize dataframe:
         self.sim_df = pd.DataFrame()
 
         if self.orient == 'right':
@@ -64,22 +76,34 @@ class ProbDiffSim(TwitterDataProcessor):
         elif self.orient == 'left':
             print('Beginning liberal group simulation.', flush=True)
 
-        # Run for n trials and continually add to the more_extreme_count dataframe:
-        for i in range(n):
-            print(f'Current iteration: {i + 1} of {n}', flush=True)
+        if self.frac_data == True:
+            print(f'Fractions chosen: {int(self.frac_start*100)}% to {int(self.frac_end*100)}%.', flush=True)
+
+        # Run for 100 trials and continually add to the more_extreme_count dataframe:
+        for i in range(100):
+            print(f'Current iteration: {i + 1} of 100.', '\n', flush=True)
+
+            start_time = time.time()
 
             # Get homophily ratings:
             self.get_homophily_df()
-            print(self.homophily_df.head(3))
 
-            # Create columns counting whether peer is more extreme than ego in each condition:
-            self.homophily_df['is_more_extreme_homoph'] = get_more_extreme_count(self.homophily_df['orig_rating_ego'],
-                                                                            self.homophily_df['homoph_rating_peer'])
-            self.homophily_df['is_more_extreme_empi'] = get_more_extreme_count(self.homophily_df['orig_rating_ego'],
-                                                                          self.homophily_df['orig_rating_peer'])
+            # Define trial ego ratings:
+            ego_ratings = self.homophily_df['orig_rating_ego']
+
+            # Define trial peer ratings for each condition:
+            peer_ratings_empi = self.homophily_df['orig_rating_peer']
+            peer_ratings_homoph = self.homophily_df['homoph_rating_peer']
+
+            # Create count column indicating whether peer is more extreme for each condition:
+            self.homophily_df['is_more_extreme_homoph'] = count_more_extreme(ego_ratings, peer_ratings_homoph)
+            self.homophily_df['is_more_extreme_empi'] = count_more_extreme(ego_ratings, peer_ratings_empi)
 
             # Append results to dataframe:
             self.sim_df = pd.concat([self.sim_df, self.homophily_df], axis=0, ignore_index=True)
+
+            # Track trial runtime:
+            print(f'Current iteration complete. Time elapsed: {(time.time() - start_time) / 60: .2f} minutes.', flush=True)
 
         print('Simulation complete. Creating dataframe.', flush=True)
 
@@ -97,16 +121,20 @@ class ProbDiffSim(TwitterDataProcessor):
 
     # Function to save dataframe:
     def save_prob_diff_df(self):
+        data_path = os.path.join('..', 'data')
 
         if self.orient == 'right':
-            path_beginning = '../data/prob_diff_cons_'
+            path_beginning = os.path.join(data_path, 'prob_diff_cons')
 
         elif self.orient == 'left':
-            path_beginning = '../data/prob_diff_libs_'
+            path_beginning = os.path.join(data_path, 'prob_diff_libs')
 
-        file_path = path_beginning + str(self.frac_start) + '_' + str(self.frac_end) + '.csv'
+        if self.frac_data == True:
+            file_path = path_beginning + '_' + str(self.frac_start) + '_' + str(self.frac_end) + '.csv'
+        else:
+            file_path = path_beginning+'.csv'
+
         self.prob_diff_df.to_csv(file_path, index=False)
-
         print('Dataframe saved.', flush=True)
 
 
