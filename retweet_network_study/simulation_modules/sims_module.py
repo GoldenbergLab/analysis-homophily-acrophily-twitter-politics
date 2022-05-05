@@ -103,10 +103,9 @@ class ProbDiffSim(TwitterDataProcessor):
             self.sim_df = pd.concat([self.sim_df, self.homophily_df], axis=0, ignore_index=True)
 
             # Track trial runtime:
-            print(f'Current iteration complete. Time elapsed: {(time.time() - start_time) / 60: .2f} minutes.', flush=True)
+            print(f'Current iteration complete. Time elapsed: {(time.time() - start_time) / 60: .2f} minutes.', '\n', flush=True)
 
         print('Simulation complete. Creating dataframe.', flush=True)
-
 
     def get_prob_diff_df(self):
         # Get mean probability that a peer is more extreme in each condition for each ego across all trials:
@@ -114,8 +113,12 @@ class ProbDiffSim(TwitterDataProcessor):
             prob_more_extreme_homoph=('is_more_extreme_homoph', 'mean'),
             prob_more_extreme_empi=('is_more_extreme_empi', 'mean'))
 
+        # Get probability of peer being more extreme in each condition:
+        prob_more_extreme_empi = self.prob_diff_df['prob_more_extreme_empi']
+        prob_more_extreme_homoph = self.prob_diff_df['prob_more_extreme_homoph']
+
         # Crates column of differences between probabilities in the empirical and homophily conditions:
-        self.prob_diff_df['prob_diff'] = self.prob_diff_df['prob_more_extreme_empi'] - self.prob_diff_df['prob_more_extreme_homoph']
+        self.prob_diff_df['prob_diff'] = prob_more_extreme_empi - prob_more_extreme_homoph
 
         print('Dataframe created. Saving to csv.', flush=True)
 
@@ -129,14 +132,13 @@ class ProbDiffSim(TwitterDataProcessor):
         elif self.orient == 'left':
             path_beginning = os.path.join(data_path, 'prob_diff_libs')
 
-        if self.frac_data == True:
+        if self.frac_data is True:
             file_path = path_beginning + '_' + str(self.frac_start) + '_' + str(self.frac_end) + '.csv'
         else:
             file_path = path_beginning+'.csv'
 
         self.prob_diff_df.to_csv(file_path, index=False)
         print('Dataframe saved.', flush=True)
-
 
     def run(self):
         self.get_sim_df()
