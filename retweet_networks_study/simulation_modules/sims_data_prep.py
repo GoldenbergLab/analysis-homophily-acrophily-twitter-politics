@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 
@@ -14,11 +15,15 @@ class TwitterDataProcessor:
 
         print('Loading unprocessed user rating and retweet datasets.', flush=True)
         # Load users data frame:
-        users_df = pd.read_csv('../data/users_ratings.csv')
+        data_path = os.path.join('..', 'data')
+        users_file_path = os.path.join(data_path, 'users_ratings.csv')
+
+        users_df = pd.read_csv(users_file_path)
         self.users_df = users_df.set_index('userid')
 
         # Retweet network df:
-        self.rt_df = pd.read_csv('../data/rt_network.csv')
+        rt_network_file_path = os.path.join(data_path, 'rt_network.csv')
+        self.rt_df = pd.read_csv(rt_network_file_path)
 
         print('Datasets loaded. Processing and joining datasets.', flush=True)
 
