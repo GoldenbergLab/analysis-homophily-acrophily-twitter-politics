@@ -1,0 +1,71 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+
+```{r}
+# Importing libraries:
+library(dplyr)
+library(tidyr)
+```
+
+
+# Converting mean absolute difference data to long format:
+
+```{r}
+
+# Reading in datasets:
+abs_diff_df_left <- read.csv('../data/left_mean_abs_diffs_5_45.csv')
+abs_diff_df_right <- read.csv('../data/right_mean_abs_diffs_5_45.csv')
+
+# Binding conservative and liberal datasets:
+abs_diff_df <- rbind(abs_diff_df_left, abs_diff_df_right)
+abs_diff_df <- abs_diff_df %>% select(-X)
+
+# Converting mean abs diff columns to long format and removing unnecessary columns:
+df_long_abs_diff <- abs_diff_df %>% 
+  pivot_longer(cols=c(2,4), names_to='abs_diff_condition', values_to='mean_abs_diff') %>%
+  select(-c(ci_moe_rand, ci_moe_empi))
+
+# Converting confidence interval columns to long format and removing unnecessary columns:
+df_long_ci_moe <- abs_diff_df %>% 
+  pivot_longer(cols=c(3,5), names_to='ci_moe_condition', values_to='ci_moe') %>%
+  select(-c(threshold, affiliation, abs_diff_rand, abs_diff_empi))
+
+# Combining avg feel and avg perception variables into one dataframe:
+abs_diff_df_long <- cbind(df_long_abs_diff, df_long_ci_moe)
+
+# Saving results:
+write.csv(abs_diff_df_long, '../data/abs_diff_data_long.csv', row.names=FALSE)
+```
+
+
+# Converting acrophily simulation data to long format:
+
+```{r}
+# Read in liberal and conservative datasets:
+acroph_libs_df <- read.csv('../data/left_acroph_sim_5_45.csv')
+acroph_cons_df <- read.csv('../data/right_acroph_sim_5_45.csv')
+
+# Bind liberal and conservative data:
+acroph_df <- rbind(acroph_libs_df, acroph_cons_df)
+
+# Convert probability columns to long format and remove unnecessary columns:
+acroph_probs_long <- acroph_df %>%
+  pivot_longer(cols=c(3:6), names_to='sim_condition_prob_higher', values_to='prob_higher') %>%
+  select(-c(ci_moe_empi, ci_moe_random, ci_moe_homophily, ci_moe_acrophily))
+
+# Convert confidence interval columns to long format and remove unnecessary columns:
+acroph_ci_moe_long <- acroph_df %>%
+  pivot_longer(cols=c(7:10), names_to='sim_condition_ci_moe', values_to='ci_moe') %>%
+  select(-c(X, threshold, affiliation, prob_higher_empi, prob_higher_random, 
+            prob_higher_homophily, prob_higher_acrophily))
+
+# Bind columns and remove random condition:
+acroph_df_long <- cbind(acroph_probs_long, acroph_ci_moe_long) %>% 
+  filter(sim_condition_prob_higher != 'prob_higher_random')
+
+# Save results:
+write.csv(acroph_df_long, '../data/acroph_sim_data_long.csv', row.names=FALSE)
+```
