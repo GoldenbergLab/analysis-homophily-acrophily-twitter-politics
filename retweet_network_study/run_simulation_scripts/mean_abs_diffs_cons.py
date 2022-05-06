@@ -18,8 +18,6 @@ pd.options.mode.chained_assignment = None  # default='warn'
 import warnings
 warnings.filterwarnings('ignore')
 
-from scipy.stats import gaussian_kde
-
 import scipy
 
 import pickle
@@ -54,8 +52,6 @@ def get_mean_abs_diff(r, u, thresh, baseline):
         columns={'orig_rating': 'orig_rating_ego'})
 
     r2 = get_random(r2, 0.7)
-
-    mean_abs_diffs_list = []
 
     if baseline == 'rand':
         r2['orig_rating_peer'] = np.random.permutation(r2['orig_rating_peer'])
