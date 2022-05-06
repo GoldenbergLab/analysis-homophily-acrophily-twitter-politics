@@ -29,7 +29,6 @@ class TwitterDataProcessor:
         self.rt_df = pd.read_csv(rt_network_file_path)
 
         print('Datasets loaded. Processing and joining datasets.', flush=True)
-        print(len(self.rt_df), flush=True)
 
     def preprocess_data(self):
         # Set minimum number of tweets:
@@ -55,7 +54,6 @@ class TwitterDataProcessor:
 
         # Remove observations where user retweeted self
         self.rt_df = self.rt_df[self.rt_df['userid'] != self.rt_df['rt_userid']]
-        print(len(self.rt_df), flush=True)
 
         # Subset fraction of users to speed up simulation:
         if self.frac_data is True:
@@ -70,8 +68,6 @@ class TwitterDataProcessor:
 
             # Return dataset with only user IDs in specified fraction:
             self.rt_df = self.rt_df[self.rt_df['userid'].isin(users_fraction)]
-
-        print(len(self.rt_df), flush=True)
 
     def join_data(self):
         # Join on user ID and retweet user ID:
