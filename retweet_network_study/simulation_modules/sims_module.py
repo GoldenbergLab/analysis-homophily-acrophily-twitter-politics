@@ -4,6 +4,8 @@ import numpy as np
 import time
 import pandas as pd
 
+import statsmodels.stats.api as sms
+
 pd.options.mode.chained_assignment = None
 
 
@@ -156,7 +158,10 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         self.rt_df = self.get_retweet_data()
         self.thresholds = thresholds
 
-        self.rt_df_subset = None
+        self.confints_random = list()
+        self.confints_empi = list()
+
+        self.abs_diff_df = None
         self.mean_abs_diff_df = None
         self.threshold_df = None
         self.sim_df = None
@@ -167,18 +172,16 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         n_sample_users = int(fraction*len(users))
         users_subset = np.random.choice(users, size=n_sample_users, replace=False)
 
-        self.rt_df_subset = self.rt_df[self.rt_df['userid'].isin(users_subset)]
+        self.abs_diff_df = self.rt_df[self.rt_df['userid'].isin(users_subset)]
 
     def get_abs_diffs(self):
 
-        ego_ratings = self.rt_df_subset['orig_rating_ego'].values
-        peer_ratings_empi = self.rt_df_subset['orig_rating_peer'].values
+        ego_ratings = self.abs_diff_df['orig_rating_ego'].values
+        peer_ratings_empi = self.abs_diff_df['orig_rating_peer'].values
         peer_ratings_random = np.random.permutation(peer_ratings_empi)
 
-        self.rt_df_subset['abs_diff_empi'] = np.abs(ego_ratings - peer_ratings_empi)
-        self.rt_df_subset['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
-
-        return self.rt_df_subset
+        self.abs_diff_df['abs_diff_empi'] = np.abs(ego_ratings - peer_ratings_empi)
+        self.abs_diff_df['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
 
     def get_sim_df(self):
 
@@ -192,6 +195,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
             raise Exception("Political orientation must be defined as left or right.")
 
         self.sim_df = pd.DataFrame()
+
         for threshold in self.thresholds:
 
             self.rt_df = self.rt_df[self.rt_df['rt'] >= threshold]
@@ -203,9 +207,9 @@ class MeanAbsDiffSim(TwitterDataProcessor):
             for i in range(100):
 
                 self.get_random_users()
-                abs_diff_df = self.get_abs_diffs()
+                self.get_abs_diffs()
 
-                threshold_df = pd.concat([self.threshold_df, abs_diff_df], axis=0, ignore_index=True)
+                threshold_df = pd.concat([self.threshold_df, self.abs_diff_df], axis=0, ignore_index=True)
 
             threshold_df = threshold_df.groupby('userid', as_index=False)\
                 .agg(mean_abs_diff_empi=('abs_diff_empi', 'mean'),
@@ -213,16 +217,27 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
             threshold_df['threshold'] = np.repeat(threshold, len(threshold_df))
 
+            confint_empi = sms.DescrStatsW(threshold_df['mean_abs_diff_empi'].values).tconfint_mean()
+            confint_random = sms.DescrStatsW(threshold_df['mean_abs_diff_random']).tconfint_mean()
+
+            self.confints_empi.append(confint_empi)
+            self.confints_random.append(confint_random)
+
             self.sim_df = pd.concat([self.sim_df, threshold_df], axis=0, ignore_index=True)
 
+    def get_agg_sim_df(self):
+
         print('Simulation complete. Taking average results by threshold.', flush=True)
-        self.sim_df = self.sim_df.groupby('threshold', as_index=False).agg(
+        self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg(
             mean_abs_diff_empi=('mean_abs_diff_empi', 'mean'),
             mean_abs_diff_random=('mean_abs_diff_random', 'mean'))
 
-        self.sim_df['poli_affil'] = np.repeat(self.orient, len(self.sim_df))
+        self.agg_sim_df['confint_empi'] = self.confints_empi
+        self.agg_sim_df['confint_random'] = self.confints_random
 
-    def save_sim_df(self):
+        self.agg_sim_df['poli_affil'] = np.repeat(self.orient, len(self.agg_sim_df))
+
+    def save_agg_sim_df(self):
 
         print('Average results taken. Saving final dataframe.', flush=True)
         data_path = os.path.join('..', 'data')
@@ -237,9 +252,10 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
         file_path = path_beginning + f'_{self.thresholds[0]}_{self.thresholds[-1]}.csv'
 
-        self.sim_df.to_csv(file_path, index=False)
+        self.agg_sim_df.to_csv(file_path, index=False)
         print('Dataframe saved.', flush=True)
 
     def run(self):
         self.get_sim_df()
-        self.save_sim_df()
+        self.get_agg_sim_df()
+        self.save_agg_sim_df()
