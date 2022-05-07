@@ -47,6 +47,18 @@ df_cross_mod <- df_cross %>%
 ### Average sentiment by average perceived and political affiliation (groups overall)
 
 ```{r}
+# Effect coding at 1 and -1:
+df_co_gen$poli_affil_coded <- ifelse(df_co_gen$poli_affil == 'left', 1, -1)
+
+# Model with interaction between perceived copartisanship and political affiliation:
+co_gen_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded, data=df_co_gen)
+
+
+summary(co_gen_model_coded)
+```
+
+
+```{r}
 # Centering intercept on left-wing participants:
 df_co_gen$poli_affil <- relevel(factor(df_co_gen$poli_affil), 'left')
 
@@ -72,19 +84,20 @@ summary(co_gen_model_right)
 
 ```
 
+### Average sentiment by average perceived and political affiliation (moderates only)
+
 
 ```{r}
-# Effect coding at 1 and -1:
-df_co_gen$poli_affil_coded <- ifelse(df_co_gen$poli_affil == 'left', 1, -1)
+# Effect coded at 1 and -1:
+df_co_mod$poli_affil_coded <- ifelse(df_co_mod$poli_affil == 'left', 1, -1)
 
 # Model with interaction between perceived copartisanship and political affiliation:
-co_gen_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded, data=df_co_gen)
+co_mod_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded, data=df_co_mod)
 
 
-summary(co_gen_model_coded)
+summary(co_mod_model_coded)
 ```
 
-### Average sentiment by average perceived and political affiliation (moderates only)
 
 ```{r}
 # Centering intercept on left-wing participants:
@@ -107,20 +120,8 @@ co_mod_model_right <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil, data=df
 
 
 summary(co_mod_model_right)
+
 ```
-
-
-```{r}
-# Effect coded at 1 and -1:
-df_co_mod$poli_affil_coded <- ifelse(df_co_mod$poli_affil == 'left', 1, -1)
-
-# Model with interaction between perceived copartisanship and political affiliation:
-co_mod_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded, data=df_co_mod)
-
-
-summary(co_mod_model_coded)
-```
-
 
 ## Cross-partisan Tweet Only Models
 
