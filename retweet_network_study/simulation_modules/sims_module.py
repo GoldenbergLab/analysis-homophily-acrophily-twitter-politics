@@ -9,6 +9,20 @@ import statsmodels.stats.api as sms
 pd.options.mode.chained_assignment = None
 
 
+# General function shared amongs simulation classes to get random 70% subset of users:
+def get_random_users(df, fraction=0.7):
+    # Get list of unique user IDs:
+    users = df['userid'].unique()
+
+    # Get sample size of 70% subset:
+    n_sample_users = int(fraction*len(users))
+
+    # Take random subset of users at specified sample size:
+    users_subset = np.random.choice(users, size=n_sample_users, replace=False)
+
+    return df[df['userid'].isin(users_subset)]
+
+
 # Create probability difference simulation class:
 class ProbDiffSim(TwitterDataProcessor):
 
@@ -21,7 +35,6 @@ class ProbDiffSim(TwitterDataProcessor):
         self.count_more_extreme = np.vectorize(lambda x, y: 1 if y > x else 0)
 
         # Initializing dataframes that will be created during run of simulation:
-        self.homophily_df = None
         self.sim_df = None
         self.prob_diff_df = None
 
@@ -29,21 +42,17 @@ class ProbDiffSim(TwitterDataProcessor):
     def get_homophily_df(self):
 
         # Randomize order of dataset for simulation trial:
-        self.rt_df = self.rt_df.sample(frac=1)
+        homophily_df = get_random_users(self.rt_df)
 
         # Get all ego and peer ratings:
-        ego_ratings = self.rt_df['orig_rating_ego'].values
-        peer_ratings = self.rt_df['orig_rating_peer'].values
+        ego_ratings = homophily_df['orig_rating_ego'].values
+        peer_ratings = homophily_df['orig_rating_peer'].values
 
         # Initialize list of closest peers based on homophily simulation:
         closest_peers = []
 
-        # Take 70% subset of ego ratings:
-        n_subset = int(0.7*len(ego_ratings))
-        ego_ratings_subset = ego_ratings[0:n_subset]
-
         # For each ego rating in subset:
-        for ego_rating in ego_ratings_subset:
+        for ego_rating in ego_ratings:
             # Find absolute differences:
             abs_diffs = np.abs(peer_ratings - ego_rating)
 
@@ -59,11 +68,10 @@ class ProbDiffSim(TwitterDataProcessor):
             # Append selected peer to closest peers list:
             closest_peers.append(closest_peer)
 
-        # Create new dataset based on subset:
-        self.homophily_df = self.rt_df.iloc[0:len(closest_peers)]
-
         # Create new column for closest peers based on homophily strategy:
-        self.homophily_df['homoph_rating_peer'] = closest_peers
+        homophily_df['homoph_rating_peer'] = closest_peers
+
+        return homophily_df
 
     # Creates dataframe with user id and probability differences after n trials:
     def get_sim_df(self):
@@ -87,21 +95,21 @@ class ProbDiffSim(TwitterDataProcessor):
             start_time = time.time()
 
             # Get homophily ratings:
-            self.get_homophily_df()
+            homophily_df = self.get_homophily_df()
 
             # Define trial ego ratings:
-            ego_ratings = self.homophily_df['orig_rating_ego']
+            ego_ratings = homophily_df['orig_rating_ego']
 
             # Define trial peer ratings for each condition:
-            peer_ratings_empi = self.homophily_df['orig_rating_peer']
-            peer_ratings_homoph = self.homophily_df['homoph_rating_peer']
+            peer_ratings_empi = homophily_df['orig_rating_peer']
+            peer_ratings_homoph = homophily_df['homoph_rating_peer']
 
             # Create count column indicating whether peer is more extreme for each condition:
-            self.homophily_df['is_more_extreme_homoph'] = self.count_more_extreme(ego_ratings, peer_ratings_homoph)
-            self.homophily_df['is_more_extreme_empi'] = self.count_more_extreme(ego_ratings, peer_ratings_empi)
+            homophily_df['is_more_extreme_homoph'] = self.count_more_extreme(ego_ratings, peer_ratings_homoph)
+            homophily_df['is_more_extreme_empi'] = self.count_more_extreme(ego_ratings, peer_ratings_empi)
 
             # Append results to dataframe:
-            self.sim_df = pd.concat([self.sim_df, self.homophily_df], axis=0, ignore_index=True)
+            self.sim_df = pd.concat([self.sim_df, homophily_df], axis=0, ignore_index=True)
 
             # Track trial runtime:
             minutes_taken = (time.time() - start_time) / 60
@@ -121,6 +129,7 @@ class ProbDiffSim(TwitterDataProcessor):
 
         # Crates column of differences between probabilities in the empirical and homophily conditions:
         self.prob_diff_df['prob_diff'] = prob_more_extreme_empi - prob_more_extreme_homoph
+        self.prob_diff_df['poli_affil'] = np.repeat(self.orient, len(self.prob_diff_df))
 
         print('Dataframe created. Saving to csv.', flush=True)
 
@@ -128,10 +137,10 @@ class ProbDiffSim(TwitterDataProcessor):
     def save_prob_diff_df(self):
         data_path = os.path.join('..', 'data')
 
-        if self.orient == 'right':
+        if self.orient == 'left':
             path_beginning = os.path.join(data_path, 'prob_diff_left')
 
-        elif self.orient == 'left':
+        elif self.orient == 'right':
             path_beginning = os.path.join(data_path, 'prob_diff_right')
         else:
             raise Exception('Political orientation must be defined as left or right.')
@@ -161,27 +170,22 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         self.confints_random = list()
         self.confints_empi = list()
 
-        self.abs_diff_df = None
-        self.mean_abs_diff_df = None
-        self.threshold_df = None
+        # Initializing simulation dataframes:
         self.sim_df = None
+        self.agg_sim_df = None
 
-    def get_random_users(self, fraction=0.7):
+    def get_abs_diffs_df(self):
 
-        users = self.rt_df['userid'].unique()
-        n_sample_users = int(fraction*len(users))
-        users_subset = np.random.choice(users, size=n_sample_users, replace=False)
+        abs_diff_df = get_random_users(self.rt_df)
 
-        self.abs_diff_df = self.rt_df[self.rt_df['userid'].isin(users_subset)]
-
-    def get_abs_diffs(self):
-
-        ego_ratings = self.abs_diff_df['orig_rating_ego'].values
-        peer_ratings_empi = self.abs_diff_df['orig_rating_peer'].values
+        ego_ratings = abs_diff_df['orig_rating_ego'].values
+        peer_ratings_empi = abs_diff_df['orig_rating_peer'].values
         peer_ratings_random = np.random.permutation(peer_ratings_empi)
 
-        self.abs_diff_df['abs_diff_empi'] = np.abs(ego_ratings - peer_ratings_empi)
-        self.abs_diff_df['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
+        abs_diff_df['abs_diff_empi'] = np.abs(ego_ratings - peer_ratings_empi)
+        abs_diff_df['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
+
+        return abs_diff_df
 
     def get_sim_df(self):
 
@@ -202,14 +206,13 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
             print(f'Current threshold: {threshold} of {self.thresholds[-1]}', flush=True)
 
-            self.threshold_df = pd.DataFrame()
+            threshold_df = pd.DataFrame()
 
             for i in range(100):
 
-                self.get_random_users()
-                self.get_abs_diffs()
+                abs_diff_df = self.get_abs_diffs_df()
 
-                threshold_df = pd.concat([self.threshold_df, self.abs_diff_df], axis=0, ignore_index=True)
+                threshold_df = pd.concat([threshold_df, abs_diff_df], axis=0, ignore_index=True)
 
             threshold_df = threshold_df.groupby('userid', as_index=False)\
                 .agg(mean_abs_diff_empi=('abs_diff_empi', 'mean'),
