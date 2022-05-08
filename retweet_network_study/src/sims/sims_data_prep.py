@@ -10,16 +10,17 @@ class TwitterDataProcessor:
         self.frac_data = frac_data
         self.frac_start = frac_start
         self.frac_end = frac_end
-        self.users_file_path = None
-        self.rt_network_file_path = None
-        self.users_df = None
-        self.rt_df = None
 
-        # Defining data paths:
+        # Defining data file paths:
         self.data_path = 'data'
         self.users_file_path = os.path.join(self.data_path, 'users_ratings.csv')
         self.rt_network_file_path = os.path.join(self.data_path, 'rt_network.csv')
 
+        # Initializing dataframes:
+        self.users_df = None
+        self.rt_df = None
+
+    # Function to load raw data:
     def load_raw_data(self):
 
         print('Loading unprocessed user rating and retweet network datasets.', flush=True)
@@ -36,6 +37,7 @@ class TwitterDataProcessor:
 
         print('Datasets loaded. Processing and joining datasets.', flush=True)
 
+    # Function to preprocess loaded raw data:
     def preprocess_data(self):
         # Set minimum number of tweets:
         min_tweets = 5
@@ -55,13 +57,12 @@ class TwitterDataProcessor:
         # Subset retweet network ID to contain only egos and peers that meet min tweet threshold:
         userid_condition = self.rt_df['userid'].isin(self.users_df.index)
         rt_userid_condition = self.rt_df['rt_userid'].isin(self.users_df.index)
-
         self.rt_df = self.rt_df[userid_condition & rt_userid_condition]
 
         # Remove observations where user retweeted self
         self.rt_df = self.rt_df[self.rt_df['userid'] != self.rt_df['rt_userid']]
 
-        # Subset fraction of users to speed up simulation:
+        # Subset fraction of users if needed to speed up simulation:
         if self.frac_data:
 
             # Get unique user ID values:
@@ -75,7 +76,9 @@ class TwitterDataProcessor:
             # Return dataset with only user IDs in specified fraction:
             self.rt_df = self.rt_df[self.rt_df['userid'].isin(users_fraction)]
 
+    # Function to join dataframes:
     def join_data(self):
+
         # Join on user ID and retweet user ID:
         self.rt_df = self.rt_df.join(self.users_df[['orig_rating']],
                                      on='userid').join(self.users_df[['orig_rating']],
@@ -85,6 +88,7 @@ class TwitterDataProcessor:
 
         print('Datasets joined. Data successfully loaded.', flush=True)
 
+    # Main function that returns final dataframe:
     def get_retweet_data(self):
         self.load_raw_data()
         self.preprocess_data()
