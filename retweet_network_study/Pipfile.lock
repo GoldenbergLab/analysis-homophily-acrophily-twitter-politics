@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0dce5677591db9ba8d87bb2113b0a02b5c679bf8e7444fde0985504787dd13ad"
+            "sha256": "9ca6133c290e59eb8e8c6cfe75cbd98ef8b0383ccfe9a9b849d6669453d63930"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,10 @@
         ]
     },
     "default": {
+        "analysis-tie-selection-twitter-politics": {
+            "editable": true,
+            "path": "."
+        },
         "numpy": {
             "hashes": [
                 "sha256:07a8c89a04997625236c5ecb7afe35a02af3896c8aa01890a849913a2309c676",
@@ -135,6 +139,10 @@
             ],
             "markers": "python_version < '3.11' and python_version >= '3.8'",
             "version": "==1.8.0"
+        },
+        "sims": {
+            "editable": true,
+            "path": "."
         },
         "six": {
             "hashes": [
