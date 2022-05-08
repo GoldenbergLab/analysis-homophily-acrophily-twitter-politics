@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from .sims_data_prep import SimDataProcessor
 from .sims_module import ProbDiffSim, MeanAbsDiffSim
 
 parser = ArgumentParser(prog='Acrophily Simulations')
