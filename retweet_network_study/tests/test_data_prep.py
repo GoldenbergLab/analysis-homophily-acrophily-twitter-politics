@@ -3,10 +3,14 @@ import sys
 import unittest
 import numpy as np
 
-appended_path = os.path.join('..', 'simulation_modules')
+# Find modules in proper directory:
+appended_path = os.path.join('..', 'src', 'sims')
 sys.path.append(appended_path)
 
-from sims_data_prep import TwitterDataProcessor, SimDataProcessor
+from sims_data_prep import TwitterDataProcessor
+
+# Change working directory to root:
+os.chdir('..')
 
 class TestTwitterDataProcessor(unittest.TestCase):
 
