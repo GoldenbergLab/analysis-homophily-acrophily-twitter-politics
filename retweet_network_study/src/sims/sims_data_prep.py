@@ -22,7 +22,7 @@ class TwitterDataProcessor:
 
     def load_raw_data(self):
 
-        print('Loading unprocessed user rating and retweet network data.', flush=True)
+        print('Loading unprocessed user rating and retweet network datasets.', flush=True)
         # Load user ratings dataframe if file path exists:
         if os.path.exists(self.users_file_path):
             self.users_df = pd.read_csv(self.users_file_path)
