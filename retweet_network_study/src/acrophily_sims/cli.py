@@ -15,18 +15,13 @@ def main(args=None):
 
     if args.sim_type == 'prob_diff':
 
-        if args.merge_only:
-            data_merger = SimDataProcessor(sim_type=args.sim_type, orient=args.orient)
-            data_merger.run()
-
+        if args.frac_data:
+            sim = ProbDiffSim(orient=args.orient, frac_data=args.frac_data,
+                          frac_start=args.frac_start, frac_end=args.frac_end)
+            sim.run()
         else:
-            if args.frac_data:
-                sim = ProbDiffSim(orient=args.orient, frac_data=args.frac_data,
-                              frac_start=args.frac_start, frac_end=args.frac_end)
-                sim.run()
-            else:
-                sim = ProbDiffSim(orient=args.orient)
-                sim.run()
+            sim = ProbDiffSim(orient=args.orient)
+            sim.run()
 
     elif args.sim_type == 'mean_abs_diff':
         sim = MeanAbsDiffSim(orient=args.orient, frac_data=args.frac_data, frac_start=args.frac_start,
