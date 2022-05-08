@@ -1,9 +1,9 @@
 from distutils.core import setup
 
 setup(
-    name='sims',
+    name='acrophily_sims',
     version='1.1',
-    packages=['sims'],
+    packages=['acrophily_sims'],
     package_dir={'': 'src'},
     url='',
     license='',

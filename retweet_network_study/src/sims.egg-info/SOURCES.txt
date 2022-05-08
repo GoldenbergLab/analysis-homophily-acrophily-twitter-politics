@@ -3,7 +3,6 @@ setup.py
 src/sims/__init__.py
 src/sims/__main__.py
 src/sims/cli.py
-src/sims/run_sims.py
 src/sims/sims_data_prep.py
 src/sims/sims_module.py
 src/sims.egg-info/PKG-INFO

@@ -7,7 +7,7 @@ name = "pypi"
 numpy = "*"
 pandas = "*"
 statsmodels = "*"
-sims = {editable = true, path = "."}
+acrophily_sims = {editable = true, path = "."}
 
 [dev-packages]
 
