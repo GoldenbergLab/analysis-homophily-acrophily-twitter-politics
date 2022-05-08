@@ -10,28 +10,36 @@ from sims_data_prep import TwitterDataProcessor, SimDataProcessor
 
 class TestTwitterDataProcessor(unittest.TestCase):
 
+    # Set up class:
     @classmethod
     def setUp(cls):
         print('setupClass')
 
+    # Tear down class:
     @classmethod
     def tearDown(cls):
         print('teardownClass')
 
+    # Set up instances to test:
     def setUp(self):
+        # Test for left, right, and fraction cases:
         self.data_prep_left = TwitterDataProcessor(orient='left')
         self.data_prep_right = TwitterDataProcessor(orient='right')
         self.data_prep_frac_left = TwitterDataProcessor(orient='left', frac_data=True,
                                                         frac_start=0.0, frac_end=0.5)
 
+    # Tear down instances:
     def tearDown(self):
-        pass
+        print('tearDown')
 
+    # Test loading raw data (all instances work same):
     def test_load_raw_data(self):
         # Tests that file exists:
         self.assertTrue(os.path.exists(self.data_prep_left.users_file_path))
 
+    # Test output of processing and joining steps for three instances:
     def test_get_retweet_data(self):
+
         # Test preprocessing step for left-wing participants/full data:
         self.data_prep_left.load_raw_data()
         self.data_prep_left.preprocess_data()
@@ -50,7 +58,7 @@ class TestTwitterDataProcessor(unittest.TestCase):
         right_users_df = self.data_prep_left.users_df
         self.assertTrue(all(right_users_df['orig_rating'] > 0))
 
-        # Preprocess fraction of left-wing users dataframe:
+        # Test preprocessing step for a fraction dataset:
         self.data_prep_frac_left.load_raw_data()
         self.data_prep_frac_left.preprocess_data()
 
