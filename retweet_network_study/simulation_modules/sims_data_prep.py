@@ -10,23 +10,29 @@ class TwitterDataProcessor:
         self.frac_data = frac_data
         self.frac_start = frac_start
         self.frac_end = frac_end
+        self.users_file_path = None
+        self.rt_network_file_path = None
         self.users_df = None
         self.rt_df = None
-        self.load_raw_data()
+
+        # Defining data paths:
+        self.data_path = os.path.join('..', 'data')
+        self.users_file_path = os.path.join(self.data_path, 'users_ratings.csv')
+        self.rt_network_file_path = os.path.join(self.data_path, 'rt_network.csv')
 
     def load_raw_data(self):
 
-        print('Loading unprocessed user rating and retweet datasets.', flush=True)
-        # Load users data frame:
-        data_path = os.path.join('..', 'data')
-        users_file_path = os.path.join(data_path, 'users_ratings.csv')
+        print('Loading unprocessed user rating and retweet network data.', flush=True)
+        # Load user ratings dataframe if file path exists:
+        if os.path.exists(self.users_file_path):
+            self.users_df = pd.read_csv(self.users_file_path)
+            self.users_df = self.users_df.set_index('userid')
+        else:
+            return 'Users ratings file does not exist.'
 
-        users_df = pd.read_csv(users_file_path)
-        self.users_df = users_df.set_index('userid')
-
-        # Retweet network df:
-        rt_network_file_path = os.path.join(data_path, 'rt_network.csv')
-        self.rt_df = pd.read_csv(rt_network_file_path)
+        # Define retweet network dataframe if file path exists:
+        if os.path.exists(self.rt_network_file_path):
+            self.rt_df = pd.read_csv(self.rt_network_file_path)
 
         print('Datasets loaded. Processing and joining datasets.', flush=True)
 
@@ -80,6 +86,7 @@ class TwitterDataProcessor:
         print('Datasets joined. Data successfully loaded.', flush=True)
 
     def get_retweet_data(self):
+        self.load_raw_data()
         self.preprocess_data()
         self.join_data()
 
@@ -88,8 +95,9 @@ class TwitterDataProcessor:
 
 class SimDataProcessor:
 
-    def __init__(self, sim_type):
+    def __init__(self, sim_type, orient):
         self.sim_type = sim_type
+        self.orient = orient
 
         # Initializing merged dataframe and folder/file paths:
         self.df = None
@@ -103,9 +111,9 @@ class SimDataProcessor:
         self.data_folder_path = os.path.join('..', 'data')
 
         if self.sim_type == 'prob_diff':
-            sim_file_name = 'user_coef.csv'
+            sim_file_name = f'user_coef_{self.orient}.csv'
         else:
-            sim_file_name = f'{self.sim_type}_sim.csv'
+            sim_file_name = f'{self.sim_type}_sim_{self.orient}.csv'
 
         self.sim_file_path = os.path.join(self.data_folder_path, sim_file_name)
 
@@ -117,18 +125,13 @@ class SimDataProcessor:
 
             files = os.listdir(self.data_folder_path)
             sim_data_files = [os.path.join(self.data_folder_path, file) for file in files
-                              if file.startswith(self.sim_type)]
+                              if file.startswith(f'{self.sim_type}_{self.orient}')]
 
             print(f'{len(sim_data_files)} files found for sim type {self.sim_type}. Merging files.',
                   flush=True)
 
             for file in sim_data_files:
                 current_df = pd.read_csv(file)
-
-                if 'libs' in file:
-                    current_df['poli_affil'] = np.repeat('left', len(current_df))
-                else:
-                    current_df['poli_affil'] = np.repeat('right', len(current_df))
 
                 self.df = pd.concat([self.df, current_df], axis=0, ignore_index=True)
 
