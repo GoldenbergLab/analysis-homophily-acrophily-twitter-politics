@@ -80,10 +80,10 @@ class ProbDiffSim(TwitterDataProcessor):
         self.sim_df = pd.DataFrame()
 
         if self.orient == 'right':
-            print('Beginning conservative group simulation.', flush=True)
+            print('Beginning probability difference simulation for conservative users.', flush=True)
 
         elif self.orient == 'left':
-            print('Beginning liberal group simulation.', flush=True)
+            print('Beginning probability difference simulation for liberal users.', flush=True)
 
         if self.frac_data:
             print(f'Fractions chosen: {int(self.frac_start * 100)}% to {int(self.frac_end * 100)}%.', flush=True)
@@ -190,10 +190,10 @@ class MeanAbsDiffSim(TwitterDataProcessor):
     def get_sim_df(self):
 
         if self.orient == 'left':
-            print('Beginning liberal simulation.', flush=True)
+            print('Beginning mean absolute difference simulation for liberal users.', flush=True)
 
         elif self.orient == 'right':
-            print('Beginning conservative simulation.', flush=True)
+            print('Beginning mean absolute difference simulation for conservative users.', flush=True)
 
         else:
             raise Exception("Political orientation must be defined as left or right.")
