@@ -8,7 +8,7 @@ os.chdir('..')
 
 # Add command line arguments:
 parser = ArgumentParser(prog='Acrophily Simulations')
-parser.add_argument('-s', '--sim_type', default="acrophily", help="Type of simulation you wish to run (acrophily/prob_diff/mean_abs_diff/NA)")
+parser.add_argument('-s', '--sim_type', default="acrophily", help="Type of simulation you wish to run (acrophily/prob_diff/mean_abs_diff)")
 parser.add_argument('-o', '--orient', default="left", help="User political orientation you wish to run simulation on (left/right)")
 
 class SimDataProcessor:
