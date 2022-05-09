@@ -35,7 +35,7 @@ class SimDataProcessor:
         self.sim_file_path = os.path.join(self.data_folder_path, sim_file_name)
 
         if os.path.exists(self.sim_file_path):
-            raise Exception("File already exists. Will not overwrite it.")
+            raise Exception("File already exists. Will not overwrite.")
 
         else:
             self.df = pd.DataFrame()
@@ -52,7 +52,7 @@ class SimDataProcessor:
 
                 self.df = pd.concat([self.df, current_df], axis=0, ignore_index=True)
 
-            print('Files merged.', flush=True)
+            print('Files merged. Standardizing coefficients.', flush=True)
 
     def process_sim_files(self):
 
@@ -60,9 +60,9 @@ class SimDataProcessor:
             self.df['coef'] = self.df['prob_diff'] / np.std(self.df['prob_diff'].values)
             self.df = self.df[['userid', 'coef', 'poli_affil']]
 
-    def save_merged_files(self):
+            print('Coefficients standardized. Dataset processed. Saving merged file.', flush=True)
 
-        print('Saving merged file.', flush=True)
+    def save_merged_files(self):
 
         if not os.path.exists(self.sim_file_path):
             self.df.to_csv(self.sim_file_path, index=False)
