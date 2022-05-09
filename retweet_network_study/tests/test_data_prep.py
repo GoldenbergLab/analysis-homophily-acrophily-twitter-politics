@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 # Find modules in proper directory:
-appended_path = os.path.join('..', 'src', 'sims')
+appended_path = os.path.join('..', 'src', 'acrophily_sims')
 sys.path.append(appended_path)
 
 from sims_data_prep import TwitterDataProcessor
