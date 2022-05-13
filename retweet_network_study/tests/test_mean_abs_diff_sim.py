@@ -33,11 +33,13 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         # Test for left, right, and fraction cases:
         self.sim_left = MeanAbsDiffSim(poli_affil='left',
                                        users_file=os.path.join('data', 'test_users.csv'),
-                                       rt_file=os.path.join('data', 'test_rt.csv'))
+                                       rt_file=os.path.join('data', 'test_rt.csv'),
+                                       thresholds=range(1, 4))
 
         self.sim_right = MeanAbsDiffSim(poli_affil='right',
                                         users_file=os.path.join('data', 'test_users.csv'),
-                                        rt_file=os.path.join('data', 'test_rt.csv'))
+                                        rt_file=os.path.join('data', 'test_rt.csv'),
+                                        thresholds=range(1, 4))
 
     # Tear down instances:
     def tearDown(self):
