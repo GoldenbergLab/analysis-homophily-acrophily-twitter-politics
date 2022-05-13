@@ -7,6 +7,8 @@ name = "pypi"
 numpy = "*"
 pandas = "*"
 statsmodels = "*"
+pytest = "*"
+flake8 = "*"
 acrophily_sims = {editable = true, path = "."}
 
 [dev-packages]

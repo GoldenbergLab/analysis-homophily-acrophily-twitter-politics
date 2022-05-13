@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='acrophily_sims',
-    version='1.1',
+    version='1.0',
     packages=['acrophily_sims'],
     package_dir={'': 'src'},
     url='',
