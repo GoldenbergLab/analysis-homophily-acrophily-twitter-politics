@@ -29,6 +29,8 @@ from statsmodels.stats.proportion import proportion_confint
 
 pd.options.mode.chained_assignment = None
 
+import typing
+
 # GENERAL FUNCTIONS
 
 
@@ -64,7 +66,7 @@ def print_condition_statements(poli_affil, frac_data=False, frac_start=None, fra
 
 
 # Function to get random 70% subset of users:
-def get_random_users(df, fraction=0.7):
+def get_random_users(df: pd.DataFrame, fraction=0.7) -> pd.DataFrame:
     # Get list of unique user IDs:
     users = df['userid'].unique()
 
@@ -78,7 +80,7 @@ def get_random_users(df, fraction=0.7):
 
 
 # Gets closest peer rating to an ego:
-def get_homophily_peer(peer_ratings, ego_rating):
+def get_homophily_peer(peer_ratings: float, ego_rating: float) -> tuple([float, int]):
 
     # Find absolute differences between peer ratings and ego rating:
     rating_abs_diffs = np.abs(peer_ratings - ego_rating)
@@ -93,7 +95,7 @@ def get_homophily_peer(peer_ratings, ego_rating):
 
 
 # Gets closest peer rating with bias toward peer ratings above ego rating:
-def get_acrophily_peer(peer_ratings, ego_rating):
+def get_acrophily_peer(peer_ratings: float, ego_rating: float) -> tuple([float, int]):
 
     # Find differences between peer ratings and ego rating:
     rating_diffs = peer_ratings - ego_rating
@@ -108,7 +110,7 @@ def get_acrophily_peer(peer_ratings, ego_rating):
 
 
 # Progressbar function (borrowed from Harvard's COMPSCI 109B: Advanced Topics in Data Science course):
-def progressbar(n_step, n_total):
+def progressbar(n_step: int, n_total: int):
     """Prints self-updating progress bar to stdout to track for-loop progress
 
     There are entire 3rd-party libraries dedicated to custom progress-bars.
@@ -169,7 +171,7 @@ class AcrophilySim(TwitterDataProcessor):
     """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(1, 41), frac_data=False, frac_start=None,
+    def __init__(self, poli_affil, thresholds=range(31, 36), frac_data=False, frac_start=None,
                  frac_end=None, users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
 
@@ -213,7 +215,7 @@ class AcrophilySim(TwitterDataProcessor):
     def get_proportion_confint(self, peer_rating_col) -> tuple:
         n_more_extreme = len(self.agg_threshold_df[peer_rating_col > self.agg_threshold_df['orig_rating_ego']])
         n_total = len(self.agg_threshold_df)
-        confint = tuple(proportion_confint(n_more_extreme, n_total))
+        confint = proportion_confint(n_more_extreme, n_total)
 
         return confint
 
@@ -571,7 +573,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(1, 41),
+    def __init__(self, poli_affil, thresholds=range(30, 36),
                  users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
 
