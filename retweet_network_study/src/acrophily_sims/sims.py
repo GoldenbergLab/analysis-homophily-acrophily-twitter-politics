@@ -168,7 +168,7 @@ class AcrophilySim(TwitterDataProcessor):
 
         # Initializing simulation dataframes:
         self.acrophily_df = pd.DataFrame()
-        self.threshold_df = pd.DataFrame()
+        self.threshold_sim_df = pd.DataFrame()
         self.agg_threshold_df = pd.DataFrame()
         self.sim_df = pd.DataFrame()
         self.agg_sim_df = pd.DataFrame()
@@ -256,7 +256,7 @@ class AcrophilySim(TwitterDataProcessor):
     def run_sim(self, threshold, n=100):
 
         # Initialize threshold level dataframe:
-        self.threshold_df = pd.DataFrame()
+        self.threshold_sim_df = pd.DataFrame()
         print(f'Current threshold: {threshold} of {self.thresholds[-1]}', flush=True)
 
         # Run 100 iterations within current threshold:
@@ -268,7 +268,7 @@ class AcrophilySim(TwitterDataProcessor):
             self.get_acrophily_df()
 
             # Append current trial's dataframe to threshold dataframe
-            self.threshold_df = pd.concat([self.threshold_df, self.acrophily_df], axis=0, ignore_index=True)
+            self.threshold_sim_df = pd.concat([self.threshold_sim_df, self.acrophily_df], axis=0, ignore_index=True)
 
     # Get probabilities of peer being more extreme at aggregated level:
     def append_prob_more_extreme_lists(self):
@@ -283,7 +283,9 @@ class AcrophilySim(TwitterDataProcessor):
         self.probs_more_extreme_homoph.append(prob_more_extreme_homoph)
         self.probs_more_extreme_acroph.append(prob_more_extreme_acroph)
 
+    # Append P(peer more extreme) confidence intervals to lists for each condition:
     def append_confint_lists(self):
+
         # Get confidence intervals for each condition for threshold:
         confint_empi = self.get_proportion_confint(self.agg_threshold_df['orig_rating_peer'])
         confint_homoph = self.get_proportion_confint(self.agg_threshold_df['homoph_rating_peer'])
@@ -310,7 +312,7 @@ class AcrophilySim(TwitterDataProcessor):
             self.run_sim(threshold)
 
             # Aggregate to take mean results for each user for 100 iterations at threshold:
-            self.agg_threshold_df = self.threshold_df.groupby('userid', as_index=False).agg('mean')
+            self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False).agg('mean')
 
             # Add column indicating current threshold:
             self.agg_threshold_df['threshold'] = np.repeat(threshold, len(self.agg_threshold_df))
@@ -441,7 +443,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
         # Initializing simulation dataframes:
         self.abs_diff_df = pd.DataFrame()
-        self.threshold_df = pd.DataFrame()
+        self.threshold_sim_df = pd.DataFrame()
         self.agg_threshold_df = pd.DataFrame()
         self.sim_df = pd.DataFrame()
         self.agg_sim_df = pd.DataFrame()
@@ -472,7 +474,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
             # Get abs diff df and concatenate with threshold level df:
             self.get_abs_diff_df()
-            self.threshold_df = pd.concat([self.threshold_df, self.abs_diff_df], axis=0, ignore_index=True)
+            self.threshold_sim_df = pd.concat([self.threshold_sim_df, self.abs_diff_df], axis=0, ignore_index=True)
 
     # Gets mean results of single threshold run as dataframe:
     def get_agg_threshold_df(self, threshold):
@@ -486,7 +488,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         self.run_threshold_sim()
 
         # Take the aggregate of the threshold df after 100 trials, grouped by ego:
-        self.agg_threshold_df = self.threshold_df.groupby('userid', as_index=False) \
+        self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False) \
             .agg(mean_abs_diff_empi=('abs_diff_empi', 'mean'),
                  mean_abs_diff_random=('abs_diff_random', 'mean'))
 
@@ -505,7 +507,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         self.confints_random.append(confint_random)
 
     # Run simulation performing get_abs_diff for 100 iterations per threshold and store results:
-    def get_sim_df(self):
+    def run_full_sim(self):
 
         # Print opening statements to begin simulation:
         print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end,
@@ -571,7 +573,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
     # Main function to run all steps of simulation:
     def main(self):
-        self.get_sim_df()
+        self.run_full_sim()
         self.get_agg_sim_df()
         self.save_agg_sim_df()
 
@@ -669,8 +671,8 @@ class ProbDiffSim(TwitterDataProcessor):
         self.homophily_df['is_more_extreme_homoph'] = self.count_more_extreme(ego_ratings, peer_ratings_homoph)
         self.homophily_df['is_more_extreme_empi'] = self.count_more_extreme(ego_ratings, peer_ratings_empi)
 
-    # Creates dataframe with user id and probability differences after n trials:
-    def get_sim_df(self, n=100):
+    # Runs simulation for n=100 trials and creates dataframe with user id and probability differences:
+    def run_sim(self, n=100):
 
         # Print statement based on affiliation/fraction conditions:
         print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end,
@@ -740,6 +742,6 @@ class ProbDiffSim(TwitterDataProcessor):
 
     # Main function to run all steps of simulation:
     def main(self):
-        self.get_sim_df()
+        self.run_sim()
         self.get_prob_diff_df()
         self.save_prob_diff_df()
