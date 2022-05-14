@@ -55,4 +55,4 @@ def main(args=None):
     else:
         sim = AcrophilySim(poli_affil=args.poli_affil, frac_data=args.frac_data,
                            frac_start=args.frac_start, frac_end=args.frac_end)
-        sim.run()
+        sim.main()
