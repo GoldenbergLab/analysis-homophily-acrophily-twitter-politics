@@ -29,8 +29,6 @@ from statsmodels.stats.proportion import proportion_confint
 
 pd.options.mode.chained_assignment = None
 
-import typing
-
 # GENERAL FUNCTIONS
 
 
@@ -39,39 +37,31 @@ def print_condition_statements(poli_affil, frac_data=False, frac_start=None, fra
 
     # Print statement for prob diff sim:
     if sim_type == 'prob_diff':
-
-        # Prints statement for specified political affiliation of users:
-        if poli_affil == 'right':
-            print('Beginning probability difference simulation for conservative users.', flush=True)
-        elif poli_affil == 'left':
-            print('Beginning probability difference simulation for liberal users.', flush=True)
-
-    # Print statements for mean abs diff sim:
+        sim_type_statement = 'probability difference'
     elif sim_type == 'mean_abs_diff':
-        if poli_affil == 'left':
-            print('Beginning mean absolute difference simulation for liberal users.', flush=True)
-        elif poli_affil == 'right':
-            print('Beginning mean absolute difference simulation for conservative users.', flush=True)
-
-    # Defaults to print statements for acrophily sim:
+        sim_type_statement = 'mean absolute difference'
     else:
-        if poli_affil == 'right':
-            print('Beginning acrophily simulation for conservative users.', flush=True)
-        elif poli_affil == 'left':
-            print('Beginning acrophily simulation for liberal users.', flush=True)
+        sim_type_statement = 'acrophily'
+
+    # Prints statement for specified political affiliation of users:
+    if poli_affil == 'right':
+        print(f'Beginning {sim_type_statement} simulation for conservative users.', flush=True)
+    elif poli_affil == 'left':
+        print(f'Beginning {sim_type_statement} simulation for liberal users.', flush=True)
 
     # Will print start and end fractions if using only a fraction of data:
     if frac_data:
-        print(f'Fractions chosen: {frac_start*100: .1f}% to {frac_end*100: .1f}%.', flush=True)
+        print(f'Fractions chosen: {frac_start * 100: .1f}% to {frac_end * 100: .1f}%.', flush=True)
 
 
 # Function to get random 70% subset of users:
-def get_random_users(df: pd.DataFrame, fraction=0.7) -> pd.DataFrame:
+def get_random_users(df, fraction=0.7):
+
     # Get list of unique user IDs:
     users = df['userid'].unique()
 
     # Get sample size of 70% subset:
-    n_sample_users = int(fraction*len(users))
+    n_sample_users = int(fraction * len(users))
 
     # Take random subset of users at specified sample size:
     users_subset = np.random.choice(users, size=n_sample_users, replace=False)
@@ -81,7 +71,6 @@ def get_random_users(df: pd.DataFrame, fraction=0.7) -> pd.DataFrame:
 
 # Gets closest peer rating to an ego:
 def get_homophily_peer(peer_ratings: float, ego_rating: float) -> tuple([float, int]):
-
     # Find absolute differences between peer ratings and ego rating:
     rating_abs_diffs = np.abs(peer_ratings - ego_rating)
 
@@ -92,21 +81,6 @@ def get_homophily_peer(peer_ratings: float, ego_rating: float) -> tuple([float, 
     closest_peer_rating = peer_ratings[min_diff_idx]
 
     return closest_peer_rating, min_diff_idx
-
-
-# Gets closest peer rating with bias toward peer ratings above ego rating:
-def get_acrophily_peer(peer_ratings: float, ego_rating: float) -> tuple([float, int]):
-
-    # Find differences between peer ratings and ego rating:
-    rating_diffs = peer_ratings - ego_rating
-
-    # Find min difference index with added cost to differences below 0:
-    acroph_min_diff_idx = np.where(rating_diffs >= 0, rating_diffs, rating_diffs**2 + 100).argmin()
-
-    # Uses index of closest element to grab element:
-    closest_peer_rating = peer_ratings[acroph_min_diff_idx]
-
-    return closest_peer_rating, acroph_min_diff_idx
 
 
 # Progressbar function (borrowed from Harvard's COMPSCI 109B: Advanced Topics in Data Science course):
@@ -149,11 +123,10 @@ def progressbar(n_step: int, n_total: int):
 
 
 class AcrophilySim(TwitterDataProcessor):
-
     """
     The AcrophilySim runs the main simulation that returns the probability of an ego's peers
     being more extreme in the homophily, acrophily, and empirical conditions. It does so
-    using four main functions:
+    using three main functions:
 
     1. get_acrophily_df returns a dataframe with a 70% subset retrieved using get_random_users,
     performing both the homophily and acrophily simulations and appending the results as columns.
@@ -167,11 +140,11 @@ class AcrophilySim(TwitterDataProcessor):
     all users by threshold. The probabilities of an ego's peers being more extreme and the confidence
      intervals are then appended.
 
-     4. save_agg_sim_df then saves the dataframe as a CSV file.
+    The results are then saved to a CSV file.
     """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(31, 36), frac_data=False, frac_start=None,
+    def __init__(self, poli_affil, thresholds=range(30, 36), frac_data=False, frac_start=None,
                  frac_end=None, users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
 
@@ -202,22 +175,46 @@ class AcrophilySim(TwitterDataProcessor):
         self.sim_df = pd.DataFrame()
         self.agg_sim_df = pd.DataFrame()
 
-    # Gets proportion of egos with peers more extreme on average:
-    def get_prob_more_extreme(self, peer_ratings):
+    # Static method to get acrophily peer:
+    @staticmethod
+    def get_acrophily_peer(peer_ratings, ego_rating):
 
-        n_more_extreme = len(self.agg_threshold_df[peer_ratings > self.agg_threshold_df['orig_rating_ego']])
-        n_total = len(self.agg_threshold_df)
-        prob_more_extreme = n_more_extreme / n_total
+        # Find differences between peer ratings and ego rating:
+        rating_diffs = peer_ratings - ego_rating
 
-        return prob_more_extreme
+        # Find min difference index with added cost to differences below 0:
+        acroph_min_diff_idx = np.where(rating_diffs >= 0, rating_diffs, rating_diffs ** 2 + 100).argmin()
 
-    # Gets proportion confidence interval for probability of peer being more extreme:
-    def get_proportion_confint(self, peer_rating_col) -> tuple:
-        n_more_extreme = len(self.agg_threshold_df[peer_rating_col > self.agg_threshold_df['orig_rating_ego']])
-        n_total = len(self.agg_threshold_df)
-        confint = proportion_confint(n_more_extreme, n_total)
+        # Uses index of closest element to grab element:
+        closest_peer_rating = peer_ratings[acroph_min_diff_idx]
 
-        return confint
+        return closest_peer_rating, acroph_min_diff_idx
+
+    # Get chosen peers for both homophily and acrophily conditions"
+    def get_chosen_peers(self, homoph_peer_ratings, acroph_peer_ratings, ego_ratings):
+
+        # Initialize list of closest peers based on homophily simulation:
+        homoph_chosen_peer_ratings = []
+        acroph_chosen_peer_ratings = []
+
+        # For each ego rating in subset:
+        for ego_rating in ego_ratings:
+
+            # Get homophily and acrophily peer ratings and indexes within respective ratings lists:
+            homoph_chosen_peer_rating, homoph_chosen_peer_idx = get_homophily_peer(homoph_peer_ratings,
+                                                                                   ego_rating)
+            acroph_chosen_peer_rating, acroph_chosen_peer_idx = self.get_acrophily_peer(acroph_peer_ratings,
+                                                                                        ego_rating)
+
+            # Remove selected peers from respective peer pools:
+            homoph_peer_ratings = np.delete(homoph_peer_ratings, homoph_chosen_peer_idx)
+            acroph_peer_ratings = np.delete(acroph_peer_ratings, acroph_chosen_peer_idx)
+
+            # Append selected peer to respective closest peers list:
+            homoph_chosen_peer_ratings.append(homoph_chosen_peer_rating)
+            acroph_chosen_peer_ratings.append(acroph_chosen_peer_rating)
+
+        return homoph_chosen_peer_ratings, acroph_chosen_peer_ratings
 
     # Run homophily simulation and append homophily peer ratings to new column in dataframe:
     def get_acrophily_df(self):
@@ -232,84 +229,94 @@ class AcrophilySim(TwitterDataProcessor):
         homoph_peer_ratings = np.copy(peer_ratings)
         acroph_peer_ratings = np.copy(peer_ratings)
 
-        # Initialize list of closest peers based on homophily simulation:
-        homoph_closest_peer_ratings = []
-        acroph_closest_peer_ratings = []
-
-        # For each ego rating in subset:
-        for ego_rating in ego_ratings:
-
-            # Get homophily and acrophily peer ratings and indexes within respective ratings lists:
-            homoph_closest_peer_rating, homoph_closest_peer_idx = get_homophily_peer(homoph_peer_ratings, ego_rating)
-            acroph_closest_peer_rating, acroph_closest_peer_idx = get_acrophily_peer(acroph_peer_ratings, ego_rating)
-
-            # Remove selected peers from respective peer pools:
-            homoph_peer_ratings = np.delete(homoph_peer_ratings, homoph_closest_peer_idx)
-            acroph_peer_ratings = np.delete(acroph_peer_ratings, acroph_closest_peer_idx)
-
-            # Append selected peer to respective closest peers list:
-            homoph_closest_peer_ratings.append(homoph_closest_peer_rating)
-            acroph_closest_peer_ratings.append(acroph_closest_peer_rating)
+        # Get chosen peers for each condition:
+        homoph_chosen_peer_ratings, acroph_chosen_peer_ratings = self.get_chosen_peers(homoph_peer_ratings,
+                                                                                       acroph_peer_ratings,
+                                                                                       ego_ratings)
 
         # Create new column for closest peers based on strategy:
-        self.acrophily_df['homoph_rating_peer'] = homoph_closest_peer_ratings
-        self.acrophily_df['acroph_rating_peer'] = acroph_closest_peer_ratings
+        self.acrophily_df['homoph_rating_peer'] = homoph_chosen_peer_ratings
+        self.acrophily_df['acroph_rating_peer'] = acroph_chosen_peer_ratings
 
-    def get_sim_df(self, n=100):
+    # Gets proportion of egos with peers more extreme on average:
+    def get_prob_more_extreme(self, peer_ratings):
+        n_more_extreme = len(self.agg_threshold_df[peer_ratings > self.agg_threshold_df['orig_rating_ego']])
+        n_total = len(self.agg_threshold_df)
+        prob_more_extreme = n_more_extreme / n_total
+
+        return prob_more_extreme
+
+    # Gets proportion confidence interval for probability of peer being more extreme:
+    def get_proportion_confint(self, peer_rating_col):
+        n_more_extreme = len(self.agg_threshold_df[peer_rating_col > self.agg_threshold_df['orig_rating_ego']])
+        n_total = len(self.agg_threshold_df)
+        confint = proportion_confint(n_more_extreme, n_total)
+
+        return confint
+
+    # Runs the main simulation to get acrophily/homophily peers for n=100 trials
+    def run_sim(self, threshold, n=100):
+
+        # Initialize threshold level dataframe:
+        self.threshold_df = pd.DataFrame()
+        print(f'Current threshold: {threshold} of {self.thresholds[-1]}', flush=True)
+
+        # Run 100 iterations within current threshold:
+        for i in range(n):
+            # Progress bar for terminal output:
+            progressbar(i, n)
+
+            # Run homophily and acrophily simulation:
+            self.get_acrophily_df()
+
+            # Append current trial's dataframe to threshold dataframe
+            self.threshold_df = pd.concat([self.threshold_df, self.acrophily_df], axis=0, ignore_index=True)
+
+    # Get probabilities of peer being more extreme at aggregated level:
+    def append_prob_more_extreme_lists(self):
+
+        # Define P(peer more extreme) for each condition:
+        prob_more_extreme_empi = self.get_prob_more_extreme(self.agg_threshold_df['orig_rating_peer'])
+        prob_more_extreme_homoph = self.get_prob_more_extreme(self.agg_threshold_df['homoph_rating_peer'])
+        prob_more_extreme_acroph = self.get_prob_more_extreme(self.agg_threshold_df['acroph_rating_peer'])
+
+        # Append results to list:
+        self.probs_more_extreme_empi.append(prob_more_extreme_empi)
+        self.probs_more_extreme_homoph.append(prob_more_extreme_homoph)
+        self.probs_more_extreme_acroph.append(prob_more_extreme_acroph)
+
+    def append_confint_lists(self):
+        # Get confidence intervals for each condition for threshold:
+        confint_empi = self.get_proportion_confint(self.agg_threshold_df['orig_rating_peer'])
+        confint_homoph = self.get_proportion_confint(self.agg_threshold_df['homoph_rating_peer'])
+        confint_acroph = self.get_proportion_confint(self.agg_threshold_df['acroph_rating_peer'])
+
+        # Append confidence intervals to list:
+        self.confints_empi.append(confint_empi)
+        self.confints_homoph.append(confint_homoph)
+        self.confints_acroph.append(confint_acroph)
+
+    # Run simulation across multiple thresholds to create simulation dataframe:
+    def get_sim_df(self):
 
         # Print statement to verify that simulation is beginning for proper group/data fraction:
         print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end)
 
-        # Establish start time:
-        start_time = time.time()
-
         # Iterate through minimum retweet thresholds:
         for threshold in self.thresholds:
-
-            # Establish threshold level start time:
-            threshold_start_time = time.time()
 
             # Subset original rt dataframe by minimum retweet subset:
             self.rt_df = self.rt_df[self.rt_df['rt'] >= threshold]
 
-            # Initialize threshold level dataframe:
-            self.threshold_df = pd.DataFrame()
-            print(f'Current threshold: {threshold} of {self.thresholds[-1]}', flush=True)
-
-            # Run 100 iterations within current threshold:
-            for i in range(n):
-
-                # Progress bar for terminal output:
-                progressbar(i, n)
-
-                # Run homophily and acrophily simulations at once:
-                self.get_acrophily_df()
-
-                # Append each trial's dataframe to threshold dataframe
-                self.threshold_df = pd.concat([self.threshold_df, self.acrophily_df], axis=0, ignore_index=True)
+            # Run simulation:
+            self.run_sim(threshold)
 
             # Aggregate to take mean results for each user for 100 iterations at threshold:
             self.agg_threshold_df = self.threshold_df.groupby('userid', as_index=False).agg('mean')
 
-            # Get probabilities of peer being more extreme at aggregated level:
-            prob_more_extreme_empi = self.get_prob_more_extreme(self.agg_threshold_df['orig_rating_peer'])
-            prob_more_extreme_homoph = self.get_prob_more_extreme(self.agg_threshold_df['homoph_rating_peer'])
-            prob_more_extreme_acroph = self.get_prob_more_extreme(self.agg_threshold_df['acroph_rating_peer'])
-
-            # Append results at current threshold to list:
-            self.probs_more_extreme_empi.append(prob_more_extreme_empi)
-            self.probs_more_extreme_homoph.append(prob_more_extreme_homoph)
-            self.probs_more_extreme_acroph.append(prob_more_extreme_acroph)
-
-            # Get confidence intervals for each condition for threshold:
-            confint_empi = self.get_proportion_confint(self.agg_threshold_df['orig_rating_peer'])
-            confint_homoph = self.get_proportion_confint(self.agg_threshold_df['homoph_rating_peer'])
-            confint_acroph = self.get_proportion_confint(self.agg_threshold_df['acroph_rating_peer'])
-
-            # Append confidence intervals to list:
-            self.confints_empi.append(confint_empi)
-            self.confints_homoph.append(confint_homoph)
-            self.confints_acroph.append(confint_acroph)
+            # Append prob more extreme/confidence interval columns for each condition:
+            self.append_prob_more_extreme_lists()
+            self.append_confint_lists()
 
             # Add column indicating current threshold:
             self.agg_threshold_df['threshold'] = np.repeat(threshold, len(self.agg_threshold_df))
@@ -317,33 +324,31 @@ class AcrophilySim(TwitterDataProcessor):
             # Concatenate with threshold level sim df:
             self.sim_df = pd.concat([self.sim_df, self.agg_threshold_df], axis=0, ignore_index=True)
 
-            # Track runtime within threshold:
-            threshold_minutes_taken = (time.time() - threshold_start_time) / 60
-            print(f'Threshold {threshold} complete. Time elapsed: {threshold_minutes_taken: .2f} minutes. Creating dataframe.',
-                  '\n',
-                  flush=True)
+    # Append probability of peer being more extreme for each condition:
+    def get_prob_more_extreme_cols(self):
 
-        # Track total runtime:
-        minutes_taken = (time.time() - start_time) / 60
-        print(f'Simulation complete. Total time elapsed: {minutes_taken: .2f} minutes. Creating dataframe.',
-              '\n',
-              flush=True)
+        self.agg_sim_df['prob_more_extreme_empi'] = self.probs_more_extreme_empi
+        self.agg_sim_df['prob_more_extreme_homoph'] = self.probs_more_extreme_homoph
+        self.agg_sim_df['prob_more_extreme_acroph'] = self.probs_more_extreme_acroph
 
-    # Get aggregate sim df across thresholds:
-    def get_agg_sim_df(self):
+    # Append confidence intervals per threshold for each condition:
+    def get_confint_cols(self):
 
-        # Group sim df by threshold and get average results across all users:
-        self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg('mean')
-
-        # Append confidence intervals per threshold for each condition:
         self.agg_sim_df['confint_empi'] = self.confints_empi
         self.agg_sim_df['confint_homoph'] = self.confints_homoph
         self.agg_sim_df['confint_acroph'] = self.confints_acroph
 
-        # Append probability of peer being more extreme for each condition:
-        self.agg_sim_df['prob_more_extreme_empi'] = self.probs_more_extreme_empi
-        self.agg_sim_df['prob_more_extreme_homoph'] = self.probs_more_extreme_homoph
-        self.agg_sim_df['prob_more_extreme_acroph'] = self.probs_more_extreme_acroph
+    # Get aggregate sim df across thresholds:
+    def get_agg_sim_df(self):
+
+        print('Simulation complete. Taking average results by threshold.', flush=True)
+
+        # Group sim df by threshold and get average results across all users:
+        self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg('mean')
+
+        # Get P(peer more extreme) and confint columns:
+        self.get_prob_more_extreme_cols()
+        self.get_confint_cols()
 
         # Append political affiliation:
         self.agg_sim_df['poli_affil'] = np.repeat(self.poli_affil, len(self.agg_sim_df))
@@ -351,9 +356,10 @@ class AcrophilySim(TwitterDataProcessor):
                                            'prob_more_extreme_acroph', 'confint_empi',
                                            'confint_homoph', 'confint_acroph']]
 
-    def save_agg_sim_df(self):
+    # Create dataframe file path:
+    def get_file_path(self):
 
-        # Generate file path based on political affiliation:
+        # Base file path on political affiliation:
         if self.poli_affil == 'left':
             path_beginning = os.path.join('data', 'acrophily_sim_left')
         elif self.poli_affil == 'right':
@@ -368,6 +374,14 @@ class AcrophilySim(TwitterDataProcessor):
         else:
             file_path = f'{path_beginning}_{self.thresholds[0]}_{self.thresholds[-1]}.csv'
 
+        return file_path
+
+    # Save agg sim df to file path:
+    def save_agg_sim_df(self):
+
+        print('Average results taken. Saving final dataframe.', flush=True)
+
+        file_path = self.get_file_path()
         # Only save if file doesn't already exist:
         assert os.path.exists(file_path) is False, 'File already exists. Will not overwrite.'
 
@@ -375,7 +389,7 @@ class AcrophilySim(TwitterDataProcessor):
         self.agg_sim_df.to_csv(file_path, index=False)
         print('Dataframe saved.', flush=True)
 
-    def run(self):
+    def main(self):
         self.get_sim_df()
         self.get_agg_sim_df()
         self.save_agg_sim_df()
@@ -383,7 +397,6 @@ class AcrophilySim(TwitterDataProcessor):
 
 # Create probability difference simulation class:
 class ProbDiffSim(TwitterDataProcessor):
-
     """
     The ProbDiffSim class runs using four main functions:
 
@@ -447,7 +460,6 @@ class ProbDiffSim(TwitterDataProcessor):
 
         # For each ego rating in subset:
         for ego_rating in ego_ratings:
-
             homoph_peer_rating, homoph_peer_idx = get_homophily_peer(homoph_peer_ratings, ego_rating)
 
             # Remove selected peer from peer pool:
@@ -463,11 +475,11 @@ class ProbDiffSim(TwitterDataProcessor):
     def get_sim_df(self, n=100):
 
         # Print statement based on affiliation/fraction conditions:
-        print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end, sim_type='prob_diff')
+        print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end,
+                                   sim_type='prob_diff')
 
         # Run for 100 trials and continually add to the more_extreme_count dataframe:
         for i in range(n):
-
             # Establish progress bar:
             progressbar(i, n)
 
@@ -618,7 +630,8 @@ class MeanAbsDiffSim(TwitterDataProcessor):
     def get_sim_df(self):
 
         # Print opening statements to begin simulation:
-        print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end, sim_type='mean_abs_diff')
+        print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end,
+                                   sim_type='mean_abs_diff')
 
         # Iterate through each threshold in chosen range:
         for threshold in self.thresholds:
@@ -633,7 +646,6 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
             # Iterate for 100 trials:
             for i in range(100):
-
                 # Initialize threshold start time:
                 threshold_start_time = time.time()
 
@@ -644,7 +656,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
                 self.threshold_df = pd.concat([self.threshold_df, self.abs_diff_df], axis=0, ignore_index=True)
 
             # Take the aggregate of the threshold df after 100 trials, grouped by ego:
-            self.agg_threshold_df = self.threshold_df.groupby('userid', as_index=False)\
+            self.agg_threshold_df = self.threshold_df.groupby('userid', as_index=False) \
                 .agg(mean_abs_diff_empi=('abs_diff_empi', 'mean'),
                      mean_abs_diff_random=('abs_diff_random', 'mean'))
 
