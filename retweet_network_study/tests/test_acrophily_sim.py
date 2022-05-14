@@ -70,35 +70,6 @@ class TestProbDiffSim(unittest.TestCase):
         self.sim_right.get_agg_sim_df()
         self.sim_frac.get_agg_sim_df()
 
-    # Assert dataframe in question has correct number of columns:
-    def assert_num_cols(self, df_name):
-        if df_name == 'acrophily_df':
-            num_cols_left = self.sim_left.acrophily_df.shape[1]
-            num_cols_right = self.sim_right.acrophily_df.shape[1]
-            num_cols_frac = self.sim_frac.acrophily_df.shape[1]
-
-            self.assertEqual(num_cols_left, 7)
-            self.assertEqual(num_cols_right, 7)
-            self.assertEqual(num_cols_frac, 7)
-
-        elif df_name == 'agg_threshold_df':
-            num_cols_left = self.sim_left.agg_threshold_df.shape[1]
-            num_cols_right = self.sim_right.agg_threshold_df.shape[1]
-            num_cols_frac = self.sim_frac.agg_threshold_df.shape[1]
-
-            self.assertEqual(num_cols_left, 8)
-            self.assertEqual(num_cols_right, 8)
-            self.assertEqual(num_cols_frac, 8)
-
-        elif df_name == 'agg_sim_df':
-            n_cols_left = self.sim_left.agg_sim_df.shape[1]
-            n_cols_right = self.sim_right.agg_sim_df.shape[1]
-            n_cols_frac = self.sim_frac.agg_sim_df.shape[1]
-
-            self.assertEqual(n_cols_left, 6)
-            self.assertEqual(n_cols_right, 6)
-            self.assertEqual(n_cols_frac, 6)
-
     def assert_proper_len(self, df_name):
 
         if df_name == 'acrophily_df':
@@ -134,20 +105,14 @@ class TestProbDiffSim(unittest.TestCase):
 
     def test_get_acrophily_df(self):
         self.get_test_cases_acrophily_df()
-
-        self.assert_num_cols(df_name='acrophily_df')
         self.assert_proper_len(df_name='acrophily_df')
 
     def test_get_sim_df(self):
         self.get_test_cases_sim_df()
-
-        self.assert_num_cols(df_name='agg_threshold_df')
         self.assert_proper_len(df_name='agg_threshold_df')
 
     def test_get_agg_sim_df(self):
         self.get_test_cases_agg_sim_df()
-
-        self.assert_num_cols(df_name='agg_sim_df')
         self.assert_proper_len(df_name='agg_sim_df')
 
 
