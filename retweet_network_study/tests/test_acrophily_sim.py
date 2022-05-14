@@ -86,8 +86,8 @@ class TestProbDiffSim(unittest.TestCase):
             df_len_left = len(self.sim_left.agg_threshold_df)
             df_len_right = len(self.sim_right.agg_threshold_df)
 
-            n_users_left = len(np.unique(self.sim_left.threshold_df['userid'].values))
-            n_users_right = len(np.unique(self.sim_right.threshold_df['userid'].values))
+            n_users_left = len(np.unique(self.sim_left.threshold_sim_df['userid'].values))
+            n_users_right = len(np.unique(self.sim_right.threshold_sim_df['userid'].values))
 
             self.assertEqual(df_len_left, n_users_left)
             self.assertEqual(df_len_right, n_users_right)
