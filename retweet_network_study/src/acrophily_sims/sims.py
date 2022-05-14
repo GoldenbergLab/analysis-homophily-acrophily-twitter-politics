@@ -138,7 +138,8 @@ class AcrophilySim(TwitterDataProcessor):
     all users by threshold. The probabilities of an ego's peers being more extreme and the confidence
      intervals are then appended.
 
-    The results are then saved to a CSV file.
+    The results are then saved to a CSV file using the save_agg_sim_df function. The function 'main' runs
+    all steps to create and save the data.
     """
 
     # Inherit processed data from data prep class:
@@ -406,7 +407,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         for both the randomly permuted and empirical conditions and stored as two distinct columns
         in the subset dataframe.
 
-        2. get_sim_df iterates over each minimum retweet threshold in the range of thresholds specified,
+        2. run_full_sim iterates over each minimum retweet threshold in the range of thresholds specified,
         and iterates for 100 trials within each threshold. In each iteration, the abs_diff_df is generated
         with a different 70% subset, and the results are concatenated with a threshold dataframe that is
         re-initialized at the start of each new threshold. At the end of the 100 iterations, an aggregate
@@ -419,6 +420,8 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         the average mean absolute difference across all users for the threshold, as well as confidence
         intervals. It also appends the political affiliation of the users in a column.
 
+        The dataframe is then saved as a CSV file using the save_agg_sim_df function. The function 'main'
+        runs all steps to save the generated data.
         """
 
     # Inherit processed data from data prep class:
@@ -590,7 +593,7 @@ class ProbDiffSim(TwitterDataProcessor):
     to retweet the closest available peer to them and adds a probabilistic element. It records the results
     in a new column of the subset dataframe to later compare with the empirical peer ratings.
 
-    2. get_sim_df runs 100 iterations of the simulation, where the homophily dataframe is created by calling
+    2. run_sim runs 100 iterations of the simulation, where the homophily dataframe is created by calling
     get_homophily_df, and the sim_df is created by concatenating the results of the homophily simulation in
     each iteration. When the 100 trials are complete, a vectorized function (count_more_extreme) creates a
     dummy variable indicating whether a peer is more extreme than the ego for both the homophily and empirical
