@@ -40,30 +40,8 @@ class TestProbDiffSim(unittest.TestCase):
         self.sim_right.get_prob_diff_df()
         self.sim_frac.get_prob_diff_df()
 
-    # Assert dataframe in question has correct number of columns:
-    def assert_num_cols(self, df_name):
-        if df_name == 'homophily_df':
-            num_cols_left = self.sim_left.homophily_df.shape[1]
-            num_cols_right = self.sim_right.homophily_df.shape[1]
-            num_cols_frac = self.sim_frac.homophily_df.shape[1]
-
-            self.assertEqual(num_cols_left, 6)
-            self.assertEqual(num_cols_right, 6)
-            self.assertEqual(num_cols_frac, 6)
-
-        elif df_name == 'prob_diff_df':
-            # Get number of columns for each test case prob diff df:
-            num_cols_left = self.sim_left.prob_diff_df.shape[1]
-            num_cols_right = self.sim_right.prob_diff_df.shape[1]
-            num_cols_frac = self.sim_frac.prob_diff_df.shape[1]
-
-            # Test shape of prob diff df test cases:
-            self.assertEqual(num_cols_left, 5)
-            self.assertEqual(num_cols_right, 5)
-            self.assertEqual(num_cols_frac, 5)
-
     # Function that asserts proper proportionality between dataframes:
-    def assert_df_proportionality(self, df_name):
+    def assert_df_proportions(self, df_name):
 
         # Test that homophily df is 70% subset
         if df_name == 'homophily_df':
@@ -78,6 +56,16 @@ class TestProbDiffSim(unittest.TestCase):
             self.assertAlmostEqual(len(self.sim_left.sim_df), 100 * len(self.sim_left.homophily_df), delta=100)
             self.assertAlmostEqual(len(self.sim_right.sim_df), 100 * len(self.sim_right.homophily_df), delta=100)
             self.assertAlmostEqual(len(self.sim_frac.sim_df), 100 * len(self.sim_frac.homophily_df), delta=100)
+
+    def assert_no_duplicates(self):
+        # Test that homophily dataframe didn't duplicate every iteration:
+        no_dups_sim_left = self.sim_left.sim_df.drop_duplicates()
+        no_dups_sim_right = self.sim_right.sim_df.drop_duplicates()
+        no_dups_sim_frac = self.sim_frac.sim_df.drop_duplicates()
+
+        self.assertFalse(len(no_dups_sim_left) == len(self.sim_left.homophily_df))
+        self.assertFalse(len(no_dups_sim_right) == len(self.sim_right.homophily_df))
+        self.assertFalse(len(no_dups_sim_frac) == len(self.sim_frac.homophily_df))
 
     # Set up class:
     @classmethod
@@ -112,10 +100,7 @@ class TestProbDiffSim(unittest.TestCase):
         self.get_test_cases_homophily_df()
 
         # Assert that homophily dataframe is 70% of original dataframe (within rounding):
-        self.assert_df_proportionality(df_name='homophily_df')
-
-        # Assert proper number of output columns:
-        self.assert_num_cols(df_name='homophily_df')
+        self.assert_df_proportions(df_name='homophily_df')
 
     # Test simulation dataframe:
     def test_get_sim_df(self):
@@ -124,16 +109,10 @@ class TestProbDiffSim(unittest.TestCase):
         self.get_test_cases_sim_df()
 
         # Test that sim df roughly 100 times larger than homophily df:
-        self.assert_df_proportionality(df_name='sim_df')
+        self.assert_df_proportions(df_name='sim_df')
 
         # Test that homophily dataframe didn't duplicate every iteration:
-        no_dups_sim_left = self.sim_left.sim_df.drop_duplicates()
-        no_dups_sim_right = self.sim_right.sim_df.drop_duplicates()
-        no_dups_sim_frac = self.sim_frac.sim_df.drop_duplicates()
-
-        self.assertFalse(len(no_dups_sim_left) == len(self.sim_left.homophily_df))
-        self.assertFalse(len(no_dups_sim_right) == len(self.sim_right.homophily_df))
-        self.assertFalse(len(no_dups_sim_frac) == len(self.sim_frac.homophily_df))
+        self.assert_no_duplicates()
 
     def test_get_prob_diff_df(self):
 
@@ -148,9 +127,6 @@ class TestProbDiffSim(unittest.TestCase):
         self.assertEqual(len(self.sim_left.prob_diff_df), n_users_sim_left)
         self.assertEqual(len(self.sim_right.prob_diff_df), n_users_sim_right)
         self.assertEqual(len(self.sim_frac.prob_diff_df), n_users_sim_frac)
-
-        # Get number of columns for each test case prob diff df:
-        self.assert_num_cols(df_name='prob_diff_df')
 
 
 if __name__ == '__main__':
