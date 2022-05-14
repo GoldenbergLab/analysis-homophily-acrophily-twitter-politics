@@ -63,45 +63,6 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         self.sim_right.get_sim_df()
         self.sim_right.get_agg_sim_df()
 
-    # Assert df has proper number of columns for both cases:
-    def assert_num_cols(self, df_name):
-
-        # Gets column shape and asserts equal to expected amount for dataframe specified:
-        if df_name == 'abs_diffs_df':
-            n_cols_left = self.sim_left.abs_diff_df.shape[1]
-            n_cols_right = self.sim_right.abs_diff_df.shape[1]
-
-            self.assertEqual(n_cols_left, 7)
-            self.assertEqual(n_cols_right, 7)
-
-        elif df_name == 'threshold_df':
-            n_cols_left = self.sim_left.threshold_df.shape[1]
-            n_cols_right = self.sim_right.threshold_df.shape[1]
-
-            self.assertEqual(n_cols_left, 7)
-            self.assertEqual(n_cols_right, 7)
-
-        elif df_name == 'agg_threshold_df':
-            n_cols_left = self.sim_left.agg_threshold_df.shape[1]
-            n_cols_right = self.sim_right.agg_threshold_df.shape[1]
-
-            self.assertEqual(n_cols_left, 4)
-            self.assertEqual(n_cols_right, 4)
-
-        elif df_name == 'sim_df':
-            n_cols_left = self.sim_left.sim_df.shape[1]
-            n_cols_right = self.sim_right.sim_df.shape[1]
-
-            self.assertEqual(n_cols_left, 4)
-            self.assertEqual(n_cols_right, 4)
-
-        elif df_name == 'agg_sim_df':
-            n_cols_left = self.sim_left.agg_sim_df.shape[1]
-            n_cols_right = self.sim_right.agg_sim_df.shape[1]
-
-            self.assertEqual(n_cols_left, 6)
-            self.assertEqual(n_cols_right, 6)
-
     # Assert proper df length for both test cases:
     def assert_proper_len(self, df_name):
 
@@ -146,9 +107,6 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         # Get test cases for tests:
         self.get_test_cases_abs_diff_df()
 
-        # Assert correct number of cols:
-        self.assert_num_cols(df_name='abs_diffs_df')
-
         # Assert proper df length:
         self.assert_proper_len(df_name='abs_diff_df')
 
@@ -157,12 +115,6 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         # Get test cases:
         self.get_test_cases_sim_df()
 
-        # Assert correct number of cols for all dfs in function:
-        self.assert_num_cols(df_name='abs_diff_df')
-        self.assert_num_cols(df_name='threshold_df')
-        self.assert_num_cols(df_name='agg_threshold_df')
-        self.assert_num_cols(df_name='sim_df')
-
         # Assert proper lengths of relevant dfs:
         self.assert_proper_len(df_name='abs_diff_df')
         self.assert_proper_len(df_name='agg_threshold_df')
@@ -170,9 +122,6 @@ class TestMeanAbsDiffSim(unittest.TestCase):
     def test_get_agg_sim_df(self):
         # Get test case:
         self.get_test_cases_agg_sim_df()
-
-        # Assert proper number of columns:
-        self.assert_num_cols(df_name='agg_sim_df')
 
         # Assert unique row for each threshold:
         self.assert_proper_len(df_name='agg_sim_df')
