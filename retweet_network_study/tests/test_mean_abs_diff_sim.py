@@ -52,15 +52,15 @@ class TestMeanAbsDiffSim(unittest.TestCase):
 
     # Test cases for get_sim_df function:
     def get_test_cases_sim_df(self):
-        self.sim_left.get_sim_df()
-        self.sim_right.get_sim_df()
+        self.sim_left.run_full_sim()
+        self.sim_right.run_full_sim()
 
     # Test cases for get_agg_sim_df function:
     def get_test_cases_agg_sim_df(self):
-        self.sim_left.get_sim_df()
+        self.sim_left.run_full_sim()
         self.sim_left.get_agg_sim_df()
 
-        self.sim_right.get_sim_df()
+        self.sim_right.run_full_sim()
         self.sim_right.get_agg_sim_df()
 
     # Assert proper df length for both test cases:
@@ -85,8 +85,8 @@ class TestMeanAbsDiffSim(unittest.TestCase):
             df_len_left = len(self.sim_left.agg_threshold_df)
             df_len_right = len(self.sim_right.agg_threshold_df)
 
-            n_users_left = len(np.unique(self.sim_left.threshold_df['userid'].values))
-            n_users_right = len(np.unique(self.sim_right.threshold_df['userid'].values))
+            n_users_left = len(np.unique(self.sim_left.threshold_sim_df['userid'].values))
+            n_users_right = len(np.unique(self.sim_right.threshold_sim_df['userid'].values))
 
             self.assertEqual(df_len_left, n_users_left)
             self.assertEqual(df_len_right, n_users_right)
@@ -110,7 +110,7 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         # Assert proper df length:
         self.assert_proper_len(df_name='abs_diff_df')
 
-    def test_get_sim_df(self):
+    def test_run_full_sim(self):
 
         # Get test cases:
         self.get_test_cases_sim_df()
