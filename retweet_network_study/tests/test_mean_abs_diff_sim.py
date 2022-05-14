@@ -13,7 +13,7 @@ import numpy as np
 appended_path = os.path.join('src', 'acrophily_sims')
 sys.path.append(appended_path)
 
-from acrophily_sims.acrophily_sims import MeanAbsDiffSim
+from acrophily_sims.sims import MeanAbsDiffSim
 
 
 class TestMeanAbsDiffSim(unittest.TestCase):
