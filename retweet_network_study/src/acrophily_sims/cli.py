@@ -38,19 +38,15 @@ parser.add_argument("-fe", "--frac_end", default=1.0,
 def main(args=None):
     args = parser.parse_args(args=args)
 
-    if args.sim_type == 'prob_diff':
+    if args.sim_type == 'mean_abs_diff':
+        sim = MeanAbsDiffSim(poli_affil=args.poli_affil, frac_data=args.frac_data,
+                             frac_start=args.frac_start, frac_end=args.frac_end)
+        sim.main()
 
-        if args.frac_data:
-            sim = ProbDiffSim(poli_affil=args.poli_affil, frac_data=args.frac_data,
-                              frac_start=args.frac_start, frac_end=args.frac_end)
-            sim.run()
-        else:
-            sim = ProbDiffSim(poli_affil=args.poli_affil)
-            sim.run()
-
-    elif args.sim_type == 'mean_abs_diff':
-        sim = MeanAbsDiffSim(poli_affil=args.poli_affil)
-        sim.run()
+    elif args.sim_type == 'prob_diff':
+        sim = ProbDiffSim(poli_affil=args.poli_affil, frac_data=args.frac_data,
+                          frac_start=args.frac_start, frac_end=args.frac_end)
+        sim.main()
 
     else:
         sim = AcrophilySim(poli_affil=args.poli_affil, frac_data=args.frac_data,
