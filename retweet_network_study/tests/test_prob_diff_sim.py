@@ -27,9 +27,9 @@ class TestProbDiffSim(unittest.TestCase):
 
     # Function to call test cases for sim df:
     def get_test_cases_sim_df(self):
-        self.sim_left.get_sim_df()
-        self.sim_right.get_sim_df()
-        self.sim_frac.get_sim_df()
+        self.sim_left.run_sim()
+        self.sim_right.run_sim()
+        self.sim_frac.run_sim()
 
     # Function to call test cases for prob diff df:
     def get_test_cases_prob_diff_df(self):
