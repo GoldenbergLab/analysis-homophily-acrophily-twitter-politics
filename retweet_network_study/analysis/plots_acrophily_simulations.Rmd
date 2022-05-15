@@ -8,6 +8,10 @@ library(ggplot2)
 library(dplyr)
 library(glue)
 library(tidyr)
+
+df <- read.csv('../data/mean_abs_diff_right_long.csv')
+
+df_alt <- df[df$threshold %in% seq(5, 40, 5),]
 ```
 
 
@@ -62,19 +66,15 @@ coef_distplot
 
 ```{r}
 
-# Labels for facet wrap:
-label_names <- c('cons' = 'Conservatives', 'libs' = 'Liberals')
-
-mean_abs_diff_plot <- abs_diff_df_long %>%
+mean_abs_diff_plot <- df %>%
   ggplot(aes(x=threshold, y=mean_abs_diff, group=abs_diff_condition)) +
-  facet_wrap(~affiliation, labeller=as_labeller(label_names))+
   geom_line()+
-  geom_ribbon(aes(ymin=mean_abs_diff-ci_moe, ymax=mean_abs_diff+ci_moe, fill=abs_diff_condition), alpha=0.3)+
+  geom_ribbon(aes(ymin=ci_lower, ymax=ci_upper, fill=abs_diff_condition), alpha=0.3)+
   scale_fill_manual(labels = c("Empirical", "Random"), values = c("orange", "blue"))+
   labs(x='Retweet Number', y="Mean Absolute Difference", fill="Simulation Condition")+
   theme_bw()
 
-ggsave('figures/mean_abs_diff_plot.jpg', width=14, height=7)
+ggsave('../figures/mean_abs_diff_right_plot.jpg', width=14, height=7)
 
 mean_abs_diff_plot
 
@@ -98,4 +98,5 @@ ggsave('figures/acroph_plot.jpg', width=14, height=7)
 
 acroph_plot
 ```
+
 
