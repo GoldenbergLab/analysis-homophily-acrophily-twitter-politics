@@ -16,28 +16,32 @@ library(tidyr)
 ```{r}
 
 # Reading in datasets:
-abs_diff_df_left <- read.csv('../data/left_mean_abs_diffs_5_45.csv')
-abs_diff_df_right <- read.csv('../data/right_mean_abs_diffs_5_45.csv')
+#abs_diff_df_left <- read.csv('../data/left_mean_abs_diffs_5_45.csv')
+abs_diff_df_right <- read.csv('../data/mean_abs_diff_sim_right.csv')
 
 # Binding conservative and liberal datasets:
-abs_diff_df <- rbind(abs_diff_df_left, abs_diff_df_right)
-abs_diff_df <- abs_diff_df %>% select(-X)
+#abs_diff_df <- rbind(abs_diff_df_left, abs_diff_df_right)
+#abs_diff_df <- abs_diff_df %>% select(-X)
 
 # Converting mean abs diff columns to long format and removing unnecessary columns:
-df_long_abs_diff <- abs_diff_df %>% 
-  pivot_longer(cols=c(2,4), names_to='abs_diff_condition', values_to='mean_abs_diff') %>%
-  select(-c(ci_moe_rand, ci_moe_empi))
+df_long_abs_diff_right <- abs_diff_df_right %>% 
+  pivot_longer(cols=c(2,3), names_to='abs_diff_condition', values_to='mean_abs_diff') %>%
+  select(-c(confint_empi_lower, confint_empi_upper, confint_random_lower, confint_random_upper))
 
 # Converting confidence interval columns to long format and removing unnecessary columns:
-df_long_ci_moe <- abs_diff_df %>% 
-  pivot_longer(cols=c(3,5), names_to='ci_moe_condition', values_to='ci_moe') %>%
-  select(-c(threshold, affiliation, abs_diff_rand, abs_diff_empi))
+df_long_ci_lower <- abs_diff_df_right %>% 
+  pivot_longer(cols=c(4,6), names_to='ci_lower_condition', values_to='ci_lower') %>%
+  select(-c(threshold, mean_abs_diff_empi, mean_abs_diff_random, confint_empi_upper, confint_random_upper))
+
+df_long_ci_upper <- abs_diff_df_right %>% 
+  pivot_longer(cols=c(5,7), names_to='ci_lower_condition', values_to='ci_upper') %>%
+  select(-c(threshold, mean_abs_diff_empi, mean_abs_diff_random, confint_empi_lower, confint_random_lower))
 
 # Combining avg feel and avg perception variables into one dataframe:
-abs_diff_df_long <- cbind(df_long_abs_diff, df_long_ci_moe)
+abs_diff_df_long <- cbind(df_long_abs_diff_right, df_long_ci_lower, df_long_ci_upper)
 
 # Saving results:
-write.csv(abs_diff_df_long, '../data/abs_diff_data_long.csv', row.names=FALSE)
+write.csv(abs_diff_df_long, '../data/mean_abs_diff_right_long.csv', row.names=FALSE)
 ```
 
 
