@@ -152,7 +152,7 @@ class AcrophilySim(TwitterDataProcessor):
                                       frac_end=frac_end, users_file=users_file, rt_file=rt_file)
 
         # Define joined dataset using TwitterDataProcessor get_retweet_data function:
-        self.rt_df = self.get_retweet_data()
+        self.rt_df = None
 
         # Initialize simulation threshold range:
         self.thresholds = thresholds
@@ -405,6 +405,14 @@ class AcrophilySim(TwitterDataProcessor):
 
     # Main function to run the simulation, take the aggregated results, and save to file:
     def main(self):
+
+        # Assert that file path doesn't exist before running simulation:
+        file_path = self.get_file_path()
+        assert os.path.exists(file_path) is False, 'File already exists. Will not overwrite.'
+
+        # If file path doesn't exist, get data and run simulation:
+        self.rt_df = self.get_retweet_data()
+
         self.get_sim_df()
 
         # Only get aggregated df if using full data:
@@ -452,7 +460,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
                                       users_file=users_file, rt_file=rt_file)
 
         # Define joined dataset using TwitterDataProcessor get_retweet_data function:
-        self.rt_df = self.get_retweet_data()
+        self.rt_df = None
 
         # Initialize simulation threshold range:
         self.thresholds = thresholds
@@ -598,6 +606,10 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
     # Main function to run all steps of simulation:
     def main(self):
+        file_path = self.get_file_path()
+        assert os.path.exists(file_path) is False, 'File already exists. Will not overwrite.'
+
+        self.rt_df = self.get_retweet_data()
         self.run_full_sim()
 
         # Only aggregate if using full data:
@@ -642,7 +654,7 @@ class ProbDiffSim(TwitterDataProcessor):
                                       frac_end, users_file=users_file, rt_file=rt_file)
 
         # Get processed data
-        self.rt_df = self.get_retweet_data()
+        self.rt_df = None
 
         # Vectorized lambda function to count whether peer rating is greater than ego rating:
         self.count_more_extreme = np.vectorize(lambda x, y: 1 if y > x else 0)
@@ -773,6 +785,13 @@ class ProbDiffSim(TwitterDataProcessor):
 
     # Main function to run all steps of simulation:
     def main(self):
+
+        # Assure file path doesn't exist before beginning simulation:
+        file_path = self.get_file_path()
+        assert os.path.exists(file_path) is False, 'File already exists. Will not overwrite.'
+
+        # If file path exists, get retweet data and run sim/save results:
+        self.rt_df = self.get_retweet_data()
         self.run_sim()
         self.get_prob_diff_df()
         self.save_prob_diff_df()
