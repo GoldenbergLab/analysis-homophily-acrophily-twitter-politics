@@ -12,7 +12,7 @@ The main function then runs the chosen simulation with chosen specs.
 """
 
 from argparse import ArgumentParser
-from acrophily_sims.sims import ProbDiffSim, MeanAbsDiffSim, AcrophilySim
+from acrophily_sims.sims import AcrophilySim, MeanAbsDiffSim, ProbDiffSim
 
 # Initialize argument parser for command line:
 parser = ArgumentParser(prog='Acrophily Simulations')
