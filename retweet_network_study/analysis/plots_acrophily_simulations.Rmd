@@ -8,27 +8,23 @@ library(ggplot2)
 library(dplyr)
 library(glue)
 library(tidyr)
-
-df <- read.csv('../data/mean_abs_diff_right_long.csv')
-
-df_alt <- df[df$threshold %in% seq(5, 40, 5),]
 ```
 
 
 ```{r}
 
 # Reading in coefficient data:
-coef_df <- read.csv('../data/user_coef.csv')
+coef_cons <- read.csv('../data/user_coef_right.csv')
+coef_libs <- read.csv('../data/user_coef_left.csv')
 
-# Filtering to conservative and liberal subsets:
-coef_cons <- coef_df %>% filter(affiliation == 'cons')
-coef_libs <- coef_df %>% filter(affiliation == 'libs')
+
+coef_df <- rbind(coef_cons, coef_libs)
 
 # Reading in long-format mean absolute difference data:
-abs_diff_df_long <- read.csv('../data/abs_diff_data_long.csv')
+abs_diff_df_long <- read.csv('../data/mean_abs_diff_long.csv')
 
 # Reading in long-format acrophily simulation data:
-acroph_df_long <- read.csv('../data/acroph_sim_data_long.csv')
+acroph_df_long <- read.csv('../data/acrophily_sim_long.csv')
 ```
 
 # Distribution of simulation coefficients
@@ -41,35 +37,35 @@ libs_mean <- round(mean(coef_libs$coef), digits=4)
 
 # Mean coefficients for conservatives and liberals (for vertical line in plot):
 coef_df_means <- coef_df %>%
-  group_by(affiliation) %>%
+  group_by(poli_affil) %>%
   summarize(mean_coef = round(mean(coef), 4))
 
 # Color variable for vertical line:
-coef_df_means$color <- ifelse(coef_df_means$affiliation == 'cons', 'red', 'blue')
+coef_df_means$color <- ifelse(coef_df_means$poli_affil == 'right', 'red', 'blue')
 
 # Label names with means:
 label_names <- c('cons' = glue('Conservatives (mean = {cons_mean})'), 'libs' = glue('Liberals (mean = {libs_mean})'))
 
 coef_distplot <- coef_df %>%
-  ggplot(aes(x=coef, color=affiliation)) +
-  facet_wrap(~affiliation, labeller=as_labeller(label_names))+
+  ggplot(aes(x=coef, color=poli_affil)) +
+  facet_wrap(~poli_affil, labeller=as_labeller(label_names))+
   geom_density()+
-  scale_color_manual(labels = c("Conservative", "Liberal"), values = c("red", "blue"))+
+  scale_color_manual(labels = c("Liberal", "Conservative"), values = c("blue", "red"))+
   labs(x='Acrophily Coefficient', y="Density")+
   theme_bw()+
   geom_vline(data=coef_df_means, aes(xintercept=mean_coef), linetype='dashed', color=coef_df_means$color)
 
-ggsave('figures/coef_distplot.jpg', width=14, height=7)
+ggsave('../figures/coef_distplot.jpg', width=14, height=7)
 
 coef_distplot
 ```
 
 ```{r}
 
-mean_abs_diff_plot <- df %>%
-  ggplot(aes(x=threshold, y=mean_abs_diff, group=abs_diff_condition)) +
+mean_abs_diff_plot <- abs_diff_df_long %>% filter(poli_affil == 'right') %>%
+  ggplot(aes(x=threshold, y=mean_abs_diff, group=sim_condition))+
   geom_line()+
-  geom_ribbon(aes(ymin=ci_lower, ymax=ci_upper, fill=abs_diff_condition), alpha=0.3)+
+  geom_ribbon(aes(ymin=ci_lower, ymax=ci_upper, fill=sim_condition), alpha=0.3)+
   scale_fill_manual(labels = c("Empirical", "Random"), values = c("orange", "blue"))+
   labs(x='Retweet Number', y="Mean Absolute Difference", fill="Simulation Condition")+
   theme_bw()
@@ -83,18 +79,18 @@ mean_abs_diff_plot
 
 ```{r}
 
-label_names <- c('cons' = 'Conservatives', 'libs' = 'Liberals')
+label_names <- c('right' = 'Conservatives', 'left' = 'Liberals')
 
 acroph_plot <- acroph_df_long %>%
-  ggplot(aes(x=threshold, y=prob_higher, group=sim_condition_prob_higher)) +
-  facet_wrap(~affiliation, labeller=as_labeller(label_names))+
+  ggplot(aes(x=threshold, y=prob_more_extreme, group=sim_condition)) +
+  facet_wrap(~poli_affil, labeller=as_labeller(label_names))+
   geom_line()+
-  geom_ribbon(aes(ymin=prob_higher-ci_moe, ymax=prob_higher+ci_moe, fill=sim_condition_prob_higher), alpha=0.3)+
-  scale_fill_manual(labels = c("Acrophily", "Empirical", "Homophily"), values = c("red", "orange", "blue"))+
+  geom_ribbon(aes(ymin=ci_lower, ymax=ci_upper, fill=sim_condition), alpha=0.3)+
+  scale_fill_manual(labels = c("Acrophily", "Empirical", "Homophily"), values = c("red", "green", "blue"))+
   labs(x='Retweet Number', y="P(Peer More Extreme)", fill="Simulation Condition")+
   theme_bw()
 
-ggsave('figures/acroph_plot.jpg', width=14, height=7)
+ggsave('../figures/acroph_plot.jpg', width=14, height=7)
 
 acroph_plot
 ```

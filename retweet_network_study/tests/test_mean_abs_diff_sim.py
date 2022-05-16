@@ -55,14 +55,6 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         self.sim_left.run_full_sim()
         self.sim_right.run_full_sim()
 
-    # Test cases for get_agg_sim_df function:
-    def get_test_cases_agg_sim_df(self):
-        self.sim_left.run_full_sim()
-        self.sim_left.get_agg_sim_df()
-
-        self.sim_right.run_full_sim()
-        self.sim_right.get_agg_sim_df()
-
     # Assert proper df length for both test cases:
     def assert_proper_len(self, df_name):
 
@@ -118,13 +110,6 @@ class TestMeanAbsDiffSim(unittest.TestCase):
         # Assert proper lengths of relevant dfs:
         self.assert_proper_len(df_name='abs_diff_df')
         self.assert_proper_len(df_name='agg_threshold_df')
-
-    def test_get_agg_sim_df(self):
-        # Get test case:
-        self.get_test_cases_agg_sim_df()
-
-        # Assert unique row for each threshold:
-        self.assert_proper_len(df_name='agg_sim_df')
 
 
 if __name__ == '__main__':

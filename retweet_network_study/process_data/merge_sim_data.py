@@ -24,8 +24,21 @@ class SimDataProcessor:
         self.data_folder_path = 'data'
         self.sim_file_path = None
 
-        # Populating merged dataframe file and data folder path attributes:
-        self.merge_sim_files()
+    # Gets proportion of egos with peers more extreme on average:
+    def get_prob_more_extreme(self, peer_ratings):
+        n_more_extreme = len(self.agg_threshold_df[peer_ratings > self.agg_threshold_df['orig_rating_ego']])
+        n_total = len(self.agg_threshold_df)
+        prob_more_extreme = n_more_extreme / n_total
+
+        return prob_more_extreme
+
+    # Gets proportion confidence interval for probability of peer being more extreme:
+    def get_proportion_confint(self, peer_rating_col):
+        n_more_extreme = len(self.agg_threshold_df[peer_rating_col > self.agg_threshold_df['orig_rating_ego']])
+        n_total = len(self.agg_threshold_df)
+        confint = proportion_confint(n_more_extreme, n_total)
+
+        return confint
 
     @staticmethod
     def get_ci_upper_lower_cols(df, sim_type):
@@ -70,6 +83,13 @@ class SimDataProcessor:
                   flush=True)
 
         return sim_data_files
+
+    def get_agg_sim_df(self):
+        self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg('mean')
+
+    def process_sim_files(self):
+        self.agg_sim_df = get_ci_upper_lower_cols(self.agg_sim_df, self.sim_type)
+
 
     def merge_sim_files(self):
 

@@ -61,15 +61,6 @@ class TestProbDiffSim(unittest.TestCase):
         self.sim_right.get_sim_df()
         self.sim_frac.get_sim_df()
 
-    def get_test_cases_agg_sim_df(self):
-        # Get sim df output for current function:
-        self.get_test_cases_sim_df()
-
-        # Get three test cases:
-        self.sim_left.get_agg_sim_df()
-        self.sim_right.get_agg_sim_df()
-        self.sim_frac.get_agg_sim_df()
-
     def assert_proper_len(self, df_name):
 
         if df_name == 'acrophily_df':
@@ -110,10 +101,6 @@ class TestProbDiffSim(unittest.TestCase):
     def test_get_sim_df(self):
         self.get_test_cases_sim_df()
         self.assert_proper_len(df_name='agg_threshold_df')
-
-    def test_get_agg_sim_df(self):
-        self.get_test_cases_agg_sim_df()
-        self.assert_proper_len(df_name='agg_sim_df')
 
 
 if __name__ == '__main__':

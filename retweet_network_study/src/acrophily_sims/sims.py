@@ -143,7 +143,7 @@ class AcrophilySim(TwitterDataProcessor):
     """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(30, 36), frac_data=False, frac_start=None,
+    def __init__(self, poli_affil, thresholds=range(1, 41), frac_data=False, frac_start=None,
                  frac_end=None, users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
 
@@ -318,9 +318,10 @@ class AcrophilySim(TwitterDataProcessor):
             # Add column indicating current threshold:
             self.agg_threshold_df['threshold'] = np.repeat(threshold, len(self.agg_threshold_df))
 
-            # Append prob more extreme/confidence interval columns for each condition:
-            self.append_prob_more_extreme_lists()
-            self.append_confint_lists()
+            # If using full data, keep track of probabilities and confidence intervals now:
+            if not self.frac_data:
+                self.append_prob_more_extreme_lists()
+                self.append_confint_lists()
 
             # Concatenate with threshold level sim df:
             self.sim_df = pd.concat([self.sim_df, self.agg_threshold_df], axis=0, ignore_index=True)
@@ -353,9 +354,9 @@ class AcrophilySim(TwitterDataProcessor):
 
         # Append political affiliation:
         self.agg_sim_df['poli_affil'] = np.repeat(self.poli_affil, len(self.agg_sim_df))
-        self.agg_sim_df = self.agg_sim_df[['prob_more_extreme_empi', 'prob_more_extreme_homoph',
+        self.agg_sim_df = self.agg_sim_df[['threshold', 'prob_more_extreme_empi', 'prob_more_extreme_homoph',
                                            'prob_more_extreme_acroph', 'confint_empi',
-                                           'confint_homoph', 'confint_acroph']]
+                                           'confint_homoph', 'confint_acroph', 'poli_affil']]
 
     # Create dataframe file path:
     def get_file_path(self):
@@ -378,23 +379,39 @@ class AcrophilySim(TwitterDataProcessor):
         return file_path
 
     # Save agg sim df to file path:
-    def save_agg_sim_df(self):
+    def save_results(self):
 
-        print('Average results taken. Saving final dataframe.', flush=True)
+        if not self.frac_data:
+            print('Average results taken. Saving final dataframe.', flush=True)
+        else:
+            print('Simulation complete. Saving final dataframe.', flush=True)
 
+        # Get file path:
         file_path = self.get_file_path()
+
         # Only save if file doesn't already exist:
         assert os.path.exists(file_path) is False, 'File already exists. Will not overwrite.'
 
-        # Save to CSV:
-        self.agg_sim_df.to_csv(file_path, index=False)
+        # If simulation ran on full data, save aggregated df::
+        if not self.frac_data:
+            self.agg_sim_df.to_csv(file_path, index=False)
+        else:
+            # Save sim df to aggregate later if using only fraction of data:
+            self.sim_df = self.sim_df[['threshold', 'orig_rating_ego', 'orig_rating_peer',
+                                       'homoph_rating_peer', 'acroph_rating_peer']]
+            self.sim_df.to_csv(file_path, index=False)
+
         print('Dataframe saved.', flush=True)
 
     # Main function to run the simulation, take the aggregated results, and save to file:
     def main(self):
         self.get_sim_df()
-        self.get_agg_sim_df()
-        self.save_agg_sim_df()
+
+        # Only get aggregated df if using full data:
+        if not self.frac_data:
+            self.get_agg_sim_df()
+
+        self.save_results()
 
 
 class MeanAbsDiffSim(TwitterDataProcessor):
@@ -425,7 +442,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(30, 36),
+    def __init__(self, poli_affil, thresholds=range(1, 41),
                  frac_data=False, frac_start=None, frac_end=None,
                  users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
@@ -521,8 +538,9 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
             self.get_agg_threshold_df(threshold)
 
-            # Append confidence intervals to lists:
-            self.append_confint_lists()
+            # Append confidence intervals to lists now if using full data:
+            if not self.frac_data:
+                self.append_confint_lists()
 
             # Concatenate aggregate threshold df with sim_df:
             self.sim_df = pd.concat([self.sim_df, self.agg_threshold_df], axis=0, ignore_index=True)
@@ -564,21 +582,29 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
         return file_path
 
-    def save_agg_sim_df(self):
+    def save_results(self):
 
         print('Average results taken. Saving final dataframe.', flush=True)
 
         file_path = self.get_file_path()
 
-        # Save as CSV file:
-        self.agg_sim_df.to_csv(file_path, index=False)
+        # Save aggregate df if using full data:
+        if not self.frac_data:
+            self.agg_sim_df.to_csv(file_path, index=False)
+        else:
+            # Save sim df to aggregate later if using fraction:
+            self.sim_df.to_csv(file_path, index=False)
         print('Dataframe saved.', flush=True)
 
     # Main function to run all steps of simulation:
     def main(self):
         self.run_full_sim()
-        self.get_agg_sim_df()
-        self.save_agg_sim_df()
+
+        # Only aggregate if using full data:
+        if not self.frac_data:
+            self.get_agg_sim_df()
+
+        self.save_results()
 
 
 # Create probability difference simulation class:
@@ -654,8 +680,10 @@ class ProbDiffSim(TwitterDataProcessor):
         ego_ratings = self.homophily_df['orig_rating_ego'].values
         peer_ratings = self.homophily_df['orig_rating_peer'].values
 
+        # Copy peer ratings for homophily condition:
         homoph_peer_ratings = np.copy(peer_ratings)
 
+        # Get chosen peers for homophily condition:
         homoph_chosen_peer_ratings = self.get_homophily_peers(homoph_peer_ratings, ego_ratings)
 
         # Create new column for closest peers based on homophily strategy:
