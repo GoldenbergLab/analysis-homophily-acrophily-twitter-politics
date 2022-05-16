@@ -1,0 +1,79 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+
+```{r}
+# Importing libraries:
+library(dplyr)
+library(tidyr)
+```
+
+
+# Converting mean absolute difference data to long format:
+
+```{r}
+
+# Reading in datasets:
+abs_diff_df_left <- read.csv('../data/mean_abs_diff_sim_left.csv')
+abs_diff_df_right <- read.csv('../data/mean_abs_diff_sim_right.csv')
+
+# Binding conservative and liberal datasets:
+abs_diff_df <- rbind(abs_diff_df_left, abs_diff_df_right)
+
+# Converting mean abs diff columns to long format and removing unnecessary columns:
+df_long_abs_diff <- abs_diff_df %>% 
+  pivot_longer(cols=c(2,3), names_to='sim_condition', values_to='mean_abs_diff') %>%
+  select(-c(ci_empi_lower, ci_empi_upper, ci_random_lower, ci_random_upper))
+
+# Converting confidence interval columns to long format and removing unnecessary columns:
+df_long_ci_lower <- abs_diff_df %>% 
+  pivot_longer(cols=c(4,6), names_to='ci_lower_condition', values_to='ci_lower') %>%
+  select(-c(threshold, poli_affil, mean_abs_diff_empi, mean_abs_diff_random, ci_empi_upper, ci_random_upper))
+
+df_long_ci_upper <- abs_diff_df %>% 
+  pivot_longer(cols=c(5,7), names_to='ci_upper_condition', values_to='ci_upper') %>%
+  select(-c(threshold, poli_affil, mean_abs_diff_empi, mean_abs_diff_random, ci_empi_lower, ci_random_lower))
+
+# Combining avg feel and avg perception variables into one dataframe:
+abs_diff_df_long <- cbind(df_long_abs_diff, df_long_ci_lower, df_long_ci_upper)
+
+# Saving results:
+write.csv(abs_diff_df_long, '../data/mean_abs_diff_long.csv', row.names=FALSE)
+```
+
+
+# Converting acrophily simulation data to long format:
+
+```{r}
+# Read in liberal and conservative datasets:
+acroph_libs_df <- read.csv('../data/acrophily_sim_left.csv')
+acroph_cons_df <- read.csv('../data/acrophily_sim_right.csv')
+
+# Bind liberal and conservative data:
+acroph_df <- rbind(acroph_libs_df, acroph_cons_df)
+
+# Converting mean abs diff columns to long format and removing unnecessary columns:
+df_long_acroph <- acroph_df %>% 
+  pivot_longer(cols=c(2, 3, 4), names_to='sim_condition', values_to='prob_more_extreme') %>%
+  select(-c(confint_empi_lower, confint_empi_upper, confint_homoph_lower, confint_homoph_upper,
+            confint_acroph_lower, confint_acroph_upper))
+
+# Converting confidence interval columns to long format and removing unnecessary columns:
+df_long_ci_lower <- acroph_df %>% 
+  pivot_longer(cols=c(5, 7, 9), names_to='ci_lower_condition', values_to='ci_lower') %>%
+  select(-c(threshold, poli_affil, prob_more_extreme_empi, prob_more_extreme_homoph, prob_more_extreme_acroph,
+            confint_empi_upper, confint_homoph_upper, confint_acroph_upper))
+
+df_long_ci_upper <- acroph_df %>% 
+  pivot_longer(cols=c(6, 8, 10), names_to='ci_upper_condition', values_to='ci_upper') %>%
+  select(-c(threshold, poli_affil, prob_more_extreme_empi, prob_more_extreme_homoph, prob_more_extreme_acroph,
+            confint_empi_lower, confint_homoph_lower, confint_acroph_lower))
+
+# Combining avg feel and avg perception variables into one dataframe:
+acroph_df_long <- cbind(df_long_acroph, df_long_ci_lower, df_long_ci_upper)
+
+# Save results:
+write.csv(acroph_df_long, '../data/acrophily_sim_long.csv', row.names=FALSE)
+```
