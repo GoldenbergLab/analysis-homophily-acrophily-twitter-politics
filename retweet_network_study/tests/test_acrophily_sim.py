@@ -50,13 +50,22 @@ class TestProbDiffSim(unittest.TestCase):
     def tearDown(self):
         print('tearDown')
 
+    def get_test_case_data(self):
+        self.sim_left.rt_df = self.sim_left.get_retweet_data()
+        self.sim_right.rt_df = self.sim_right.get_retweet_data()
+        self.sim_frac.rt_df = self.sim_frac.get_retweet_data()
+
     # Function to call test cases for homophily df:
     def get_test_cases_acrophily_df(self):
+        self.get_test_case_data()
+
         self.sim_left.get_acrophily_df()
         self.sim_right.get_acrophily_df()
         self.sim_frac.get_acrophily_df()
 
     def get_test_cases_sim_df(self):
+        self.get_test_case_data()
+
         self.sim_left.get_sim_df()
         self.sim_right.get_sim_df()
         self.sim_frac.get_sim_df()

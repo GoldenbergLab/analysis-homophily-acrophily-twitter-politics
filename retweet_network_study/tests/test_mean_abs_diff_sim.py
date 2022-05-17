@@ -45,13 +45,19 @@ class TestMeanAbsDiffSim(unittest.TestCase):
     def tearDown(self):
         print('tearDown')
 
+    def get_test_case_data(self):
+        self.sim_left.rt_df = self.sim_left.get_retweet_data()
+        self.sim_right.rt_df = self.sim_right.get_retweet_data()
+
     # Get both test cases for get_abs_diff_df function:
     def get_test_cases_abs_diff_df(self):
+        self.get_test_case_data()
         self.sim_left.get_abs_diff_df()
         self.sim_right.get_abs_diff_df()
 
     # Test cases for get_sim_df function:
     def get_test_cases_sim_df(self):
+        self.get_test_case_data()
         self.sim_left.run_full_sim()
         self.sim_right.run_full_sim()
 
