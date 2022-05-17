@@ -2,7 +2,7 @@
 
 ## Setup
 
-To be able to run any of the three simulations, simply run the following commands from the retweet_network_study directory in your command termina:
+To be able to run any of the three simulations, simply run the following commands from the retweet_network_study directory in your command terminal:
 ```
 pipenv install
 ```
@@ -37,7 +37,7 @@ python -m acrophily_sims -s 'mean_abs_diff' -p 'right' -f True -fs 0.0 -fe 0.1
 
 ### Data
 
-Two datasets -- test_users.csv and test_rt.csv -- are required to run the unit tests on the simulations (included in the repo), and users_ratings.csv and rt_network.csv are required to run the full simulation.
+Two datasets -- test_users.csv and test_rt.csv -- are required to run the unit tests on the simulations (included in the repo), and users_ratings.csv and rt_network.csv are required to run the full simulations.
 
 ### Simulations
 The simulations modules can be found within the src/acrophily_sims directory. The data_prep.py module contains the TwitterDataProcessor class that loads and processes the data used to run the simulation. The sims.py module contains the three classes (AcrophilySim, MeanAbsDiffSim, ProbDiffSim) that run the simulations. The cli.py module contains the command-line interface as well as the main function to run the specified simulation for a given political affiliation/subset of users, which is run in the __main__.py script. 
