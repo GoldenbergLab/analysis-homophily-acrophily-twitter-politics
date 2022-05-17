@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from argparse import ArgumentParser
 import ast
+from statsmodels.stats.proportion import proportion_confint
 
 # Add command line arguments:
 parser = ArgumentParser(prog='Acrophily Simulations')
@@ -88,7 +89,7 @@ class SimDataProcessor:
         self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg('mean')
 
     def process_sim_files(self):
-        self.agg_sim_df = get_ci_upper_lower_cols(self.agg_sim_df, self.sim_type)
+        self.agg_sim_df = self.get_ci_upper_lower_cols(self.agg_sim_df, self.sim_type)
 
 
     def merge_sim_files(self):
