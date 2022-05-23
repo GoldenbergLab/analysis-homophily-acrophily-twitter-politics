@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import statsmodels.stats.api as sms
+from statsmodels.stats.proportion import proportion_confint
 
 
 # Get file path based on simulation:
@@ -52,6 +53,54 @@ def merge_sim_files(sim_type, poli_affil, data_folder_path='data'):
     return df
 
 
+# Gets proportion of egos with peers more extreme on average:
+def get_probs_more_extreme(df, col):
+
+    thresholds = np.unique(df['threshold'])
+
+    probs_more_extreme = []
+
+    for threshold in thresholds:
+        threshold_df = df[df['threshold'] == threshold]
+        n_more_extreme = len(threshold_df[threshold_df[col] > threshold_df['orig_rating_ego']])
+        n_total = len(threshold_df)
+        prob_more_extreme = n_more_extreme / n_total
+        probs_more_extreme.append(prob_more_extreme)
+
+    return probs_more_extreme
+
+
+def get_probs_more_extreme_cols(df, agg_df):
+    probs_more_extreme_empi = get_probs_more_extreme(df, col='orig_rating_peer')
+    probs_more_extreme_homoph = get_probs_more_extreme(df, col='homoph_rating_peer')
+    probs_more_extreme_acroph = get_probs_more_extreme(df, col='acroph_rating_peer')
+
+    agg_df['prob_more_extreme_empi'] = probs_more_extreme_empi
+    agg_df['prob_more_extreme_homoph'] = probs_more_extreme_homoph
+    agg_df['prob_more_extreme_acroph'] = probs_more_extreme_acroph
+
+    return agg_df
+
+
+def get_proportion_confints(df, col):
+
+    thresholds = np.unique(df['threshold'])
+
+    confints_lower = []
+    confints_upper = []
+
+    for threshold in thresholds:
+        threshold_df = df[df['threshold'] == threshold]
+        n_more_extreme = len(threshold_df[threshold_df[col] > threshold_df['orig_rating_ego']])
+        n_total = len(threshold_df)
+        confint_lower, confint_upper = proportion_confint(n_more_extreme, n_total)
+
+        confints_lower.append(confint_lower)
+        confints_upper.append(confint_upper)
+
+    return confints_lower, confints_upper
+
+
 def get_confints(df, col):
 
     thresholds = np.unique(df['threshold'])
@@ -83,9 +132,9 @@ def get_confint_cols(sim_type, df, agg_df):
         agg_df['ci_random_lower'] = confints_lower_random
         agg_df['ci_random_upper'] = confints_upper_random
     else:
-        confints_lower_empi, confints_upper_empi = get_confints(df, col='mean_abs_diff_empi')
-        confints_lower_homoph, confints_upper_homoph = get_confints(df, col='mean_abs_diff_homoph')
-        confints_lower_acroph, confints_upper_acroph = get_confints(df, col='mean_abs_diff_acroph')
+        confints_lower_empi, confints_upper_empi = get_proportion_confints(df, col='orig_rating_peer')
+        confints_lower_homoph, confints_upper_homoph = get_proportion_confints(df, col='homoph_rating_peer')
+        confints_lower_acroph, confints_upper_acroph = get_proportion_confints(df, col='acroph_rating_peer')
 
         agg_df['ci_empi_lower'] = confints_lower_empi
         agg_df['ci_empi_upper'] = confints_upper_empi
@@ -102,8 +151,15 @@ def get_confint_cols(sim_type, df, agg_df):
 def get_agg_df(sim_type, df, poli_affil):
 
     agg_df = df.groupby('threshold', as_index=False).agg('mean')
-    agg_df = get_confint_cols(sim_type=sim_type, df=df, agg_df=agg_df)
-    agg_df.drop(['userid'], axis=1, inplace=True)
+
+    if sim_type == 'acrophily':
+        agg_df = get_probs_more_extreme_cols(df, agg_df)
+        agg_df = get_confint_cols(sim_type, df, agg_df)
+
+    if sim_type == 'mean_abs_diff':
+        agg_df = get_confint_cols(sim_type=sim_type, df=df, agg_df=agg_df)
+        agg_df.drop(['userid'], axis=1, inplace=True)
+
     agg_df['poli_affil'] = np.repeat(poli_affil, len(agg_df))
 
     print('Dataframe processed. Saving to CSV.', flush=True)
@@ -126,8 +182,8 @@ def main(sim_type, poli_affil):
     save_agg_df(sim_file_path, agg_df)
 
 if __name__ == '__main__':
-    sim_type = 'mean_abs_diff'
-    poli_affil = 'left'
+    sim_type = 'acrophily'
+    poli_affil = 'right'
     sim_file_path = get_sim_file_path(sim_type, poli_affil)
     df = merge_sim_files(sim_type, poli_affil)
     agg_df = get_agg_df(sim_type, df, poli_affil)
