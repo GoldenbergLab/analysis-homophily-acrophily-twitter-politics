@@ -54,25 +54,28 @@ acroph_cons_df <- read.csv('../data/acrophily_sim_right.csv')
 # Bind liberal and conservative data:
 acroph_df <- rbind(acroph_libs_df, acroph_cons_df)
 
+acroph_df <- acroph_df %>%
+  select(-c(orig_rating_ego, orig_rating_peer, homoph_rating_peer, acroph_rating_peer))
+
 # Converting mean abs diff columns to long format and removing unnecessary columns:
-df_long_acroph <- acroph_df %>% 
-  pivot_longer(cols=c(2, 3, 4), names_to='sim_condition', values_to='prob_more_extreme') %>%
-  select(-c(confint_empi_lower, confint_empi_upper, confint_homoph_lower, confint_homoph_upper,
-            confint_acroph_lower, confint_acroph_upper))
+df_long_probs <- acroph_df %>% 
+  pivot_longer(cols=2:4, names_to='sim_condition', values_to='prob_more_extreme') %>%
+  select(-c(ci_empi_lower, ci_empi_upper, ci_homoph_lower, ci_homoph_upper,
+            ci_acroph_lower, ci_acroph_upper))
 
 # Converting confidence interval columns to long format and removing unnecessary columns:
 df_long_ci_lower <- acroph_df %>% 
   pivot_longer(cols=c(5, 7, 9), names_to='ci_lower_condition', values_to='ci_lower') %>%
   select(-c(threshold, poli_affil, prob_more_extreme_empi, prob_more_extreme_homoph, prob_more_extreme_acroph,
-            confint_empi_upper, confint_homoph_upper, confint_acroph_upper))
+            ci_empi_upper, ci_homoph_upper, ci_acroph_upper))
 
 df_long_ci_upper <- acroph_df %>% 
   pivot_longer(cols=c(6, 8, 10), names_to='ci_upper_condition', values_to='ci_upper') %>%
   select(-c(threshold, poli_affil, prob_more_extreme_empi, prob_more_extreme_homoph, prob_more_extreme_acroph,
-            confint_empi_lower, confint_homoph_lower, confint_acroph_lower))
+            ci_empi_lower, ci_homoph_lower, ci_acroph_lower))
 
 # Combining avg feel and avg perception variables into one dataframe:
-acroph_df_long <- cbind(df_long_acroph, df_long_ci_lower, df_long_ci_upper)
+acroph_df_long <- cbind(df_long_probs, df_long_ci_lower, df_long_ci_upper)
 
 # Save results:
 write.csv(acroph_df_long, '../data/acrophily_sim_long.csv', row.names=FALSE)
