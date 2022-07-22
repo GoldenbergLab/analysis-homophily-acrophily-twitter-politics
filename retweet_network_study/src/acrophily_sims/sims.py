@@ -222,7 +222,7 @@ class AcrophilySim(TwitterDataProcessor):
 
         # Get all ego and peer ratings:
         ego_ratings = self.acrophily_df['orig_rating_ego'].values
-        peer_ratings = self.rt_df['orig_rating_peer'].values
+        peer_ratings = self.acrophily_df['orig_rating_peer'].values
 
         # Make copy of peer ratings for homophily and acrophily simulations:
         homoph_peer_ratings = np.copy(peer_ratings)
@@ -307,7 +307,7 @@ class AcrophilySim(TwitterDataProcessor):
         for threshold in self.thresholds:
 
             # Subset original rt dataframe by minimum retweet subset:
-            self.rt_df = self.rt_df[self.rt_df['rt'] == threshold]
+            self.rt_df = self.rt_df[self.rt_df['rt'] >= threshold]
 
             # Run simulation:
             self.run_sim(threshold)
@@ -508,7 +508,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
     def get_agg_threshold_df(self, threshold):
 
         # Subset based on minimum retweet threshold:
-        self.rt_df = self.rt_df[self.rt_df['rt'] == threshold]
+        self.rt_df = self.rt_df[self.rt_df['rt'] >= threshold]
 
         print(f'Current threshold: {threshold} of {self.thresholds[-1]}', flush=True)
 
@@ -690,7 +690,7 @@ class ProbDiffSim(TwitterDataProcessor):
 
         # Get all ego and peer ratings:
         ego_ratings = self.homophily_df['orig_rating_ego'].values
-        peer_ratings = self.rt_df['orig_rating_peer'].values
+        peer_ratings = self.homophily_df['orig_rating_peer'].values
 
         # Copy peer ratings for homophily condition:
         homoph_peer_ratings = np.copy(peer_ratings)
