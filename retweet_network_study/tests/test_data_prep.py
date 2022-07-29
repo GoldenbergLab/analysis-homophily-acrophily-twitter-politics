@@ -41,7 +41,7 @@ class TestTwitterDataProcessor(unittest.TestCase):
                                                     users_file=os.path.join('data', 'test_users.csv'),
                                                     rt_file=os.path.join('data', 'test_rt.csv'))
         self.data_prep_frac = TwitterDataProcessor(poli_affil='left', frac_data=True,
-                                                   frac_start=0.0, frac_end=0.5,
+                                                   frac_start=0.0, frac_end=0.99,
                                                    users_file=os.path.join('data', 'test_users.csv'),
                                                    rt_file=os.path.join('data', 'test_rt.csv'))
 

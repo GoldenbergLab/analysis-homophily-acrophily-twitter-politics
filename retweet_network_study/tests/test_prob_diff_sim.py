@@ -38,7 +38,7 @@ class TestProbDiffSim(unittest.TestCase):
         self.sim_right = ProbDiffSim(poli_affil='right',
                                      users_file=os.path.join('data', 'test_users.csv'),
                                      rt_file=os.path.join('data', 'test_rt.csv'))
-        self.sim_frac = ProbDiffSim(poli_affil='left', frac_start=0.0, frac_end=0.75,
+        self.sim_frac = ProbDiffSim(poli_affil='left', frac_start=0.0, frac_end=0.99,
                                     users_file=os.path.join('data', 'test_users.csv'),
                                     rt_file=os.path.join('data', 'test_rt.csv'))
 
@@ -89,11 +89,11 @@ class TestProbDiffSim(unittest.TestCase):
             self.assertAlmostEqual(len(self.sim_right.homophily_df), 0.7 * len(self.sim_right.rt_df), delta=1)
             self.assertAlmostEqual(len(self.sim_frac.homophily_df), 0.7 * len(self.sim_frac.rt_df), delta=1)
 
-        # Test that sim_df is product of 100 iterations over homophily df (give or take 100 values):
+        # Test that sim_df is product of 1000 iterations over homophily df (give or take 100 values):
         elif df_name == 'sim_df':
-            self.assertAlmostEqual(len(self.sim_left.sim_df), 100 * len(self.sim_left.homophily_df), delta=100)
-            self.assertAlmostEqual(len(self.sim_right.sim_df), 100 * len(self.sim_right.homophily_df), delta=100)
-            self.assertAlmostEqual(len(self.sim_frac.sim_df), 100 * len(self.sim_frac.homophily_df), delta=100)
+            self.assertAlmostEqual(len(self.sim_left.sim_df), 1000 * len(self.sim_left.homophily_df), delta=100)
+            self.assertAlmostEqual(len(self.sim_right.sim_df), 1000 * len(self.sim_right.homophily_df), delta=100)
+            self.assertAlmostEqual(len(self.sim_frac.sim_df), 1000 * len(self.sim_frac.homophily_df), delta=100)
 
     def assert_no_duplicates(self):
         # Test that homophily dataframe didn't duplicate every iteration:

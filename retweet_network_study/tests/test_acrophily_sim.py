@@ -33,18 +33,18 @@ class TestProbDiffSim(unittest.TestCase):
         self.sim_left = AcrophilySim(poli_affil='left',
                                        users_file=os.path.join('data', 'test_users.csv'),
                                        rt_file=os.path.join('data', 'test_rt.csv'),
-                                     thresholds=range(1, 4))
+                                     thresholds=range(1, 2))
 
         self.sim_right = AcrophilySim(poli_affil='right',
                                         users_file=os.path.join('data', 'test_users.csv'),
                                         rt_file=os.path.join('data', 'test_rt.csv'),
-                                      thresholds=range(1, 4))
+                                      thresholds=range(1, 2))
 
         self.sim_frac = AcrophilySim(poli_affil='left',
                                      users_file=os.path.join('data', 'test_users.csv'),
                                      rt_file=os.path.join('data', 'test_rt.csv'),
-                                     frac_data=True, frac_start=0.0, frac_end=0.9,
-                                     thresholds=range(1, 4))
+                                     frac_data=True, frac_start=0.0, frac_end=0.99,
+                                     thresholds=range(1, 2))
 
     # Tear down instances:
     def tearDown(self):
@@ -72,17 +72,8 @@ class TestProbDiffSim(unittest.TestCase):
 
     def assert_proper_len(self, df_name):
 
-        if df_name == 'acrophily_df':
-            len_acroph_df_left = len(self.sim_left.acrophily_df)
-            len_acroph_df_right = len(self.sim_right.acrophily_df)
-            len_acroph_df_frac = len(self.sim_frac.acrophily_df)
-
-            self.assertAlmostEqual(len_acroph_df_left, int(0.7*len(self.sim_left.rt_df)))
-            self.assertAlmostEqual(len_acroph_df_right, int(0.7 * len(self.sim_right.rt_df)))
-            self.assertAlmostEqual(len_acroph_df_frac, int(0.7 * len(self.sim_frac.rt_df)))
-
         # Assert aggregation of threshold df by unique user ID:
-        elif df_name == 'agg_threshold_df':
+        if df_name == 'agg_threshold_df':
             df_len_left = len(self.sim_left.agg_threshold_df)
             df_len_right = len(self.sim_right.agg_threshold_df)
 
@@ -102,10 +93,6 @@ class TestProbDiffSim(unittest.TestCase):
 
             self.assertEqual(df_len_left, n_thresholds_left)
             self.assertEqual(df_len_right, n_thresholds_right)
-
-    def test_get_acrophily_df(self):
-        self.get_test_cases_acrophily_df()
-        self.assert_proper_len(df_name='acrophily_df')
 
     def test_get_sim_df(self):
         self.get_test_cases_sim_df()
