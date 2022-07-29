@@ -64,7 +64,7 @@ def get_random_users(df, fraction=0.7):
     # Take random subset of users at specified sample size:
     users_subset = np.random.choice(users, size=n_sample_users, replace=False)
 
-    return df[df['userid'].isin(users_subset)]
+    return df[df['userid'].isin(users_subset)].sample(frac=1)
 
 
 # Gets closest peer rating to an ego:
@@ -143,7 +143,7 @@ class AcrophilySim(TwitterDataProcessor):
     """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(1, 41), frac_data=False, frac_start=None,
+    def __init__(self, poli_affil, thresholds=range(1, 11), frac_data=False, frac_start=None,
                  frac_end=None, users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
 
@@ -153,6 +153,7 @@ class AcrophilySim(TwitterDataProcessor):
 
         # Define joined dataset using TwitterDataProcessor get_retweet_data function:
         self.rt_df = None
+        self.curr_rt_df = pd.DataFrame()
 
         # Initialize simulation threshold range:
         self.thresholds = thresholds
@@ -217,12 +218,13 @@ class AcrophilySim(TwitterDataProcessor):
 
     # Run homophily simulation and append homophily peer ratings to new column in dataframe:
     def get_acrophily_df(self):
+
         # Randomize order of dataset for simulation trial:
-        self.acrophily_df = get_random_users(self.rt_df)
+        self.acrophily_df = get_random_users(self.curr_rt_df)
 
         # Get all ego and peer ratings:
         ego_ratings = self.acrophily_df['orig_rating_ego'].values
-        peer_ratings = self.acrophily_df['orig_rating_peer'].values
+        peer_ratings = self.curr_rt_df['orig_rating_peer'].values
 
         # Make copy of peer ratings for homophily and acrophily simulations:
         homoph_peer_ratings = np.copy(peer_ratings)
@@ -253,8 +255,8 @@ class AcrophilySim(TwitterDataProcessor):
 
         return confint
 
-    # Runs the main simulation to get acrophily/homophily peers for n=100 trials
-    def run_sim(self, threshold, n=100):
+    # Runs the main simulation to get acrophily/homophily peers for n=1000 trials
+    def run_sim(self, threshold, n=1000):
 
         # Initialize threshold level dataframe:
         self.threshold_sim_df = pd.DataFrame()
@@ -307,7 +309,7 @@ class AcrophilySim(TwitterDataProcessor):
         for threshold in self.thresholds:
 
             # Subset original rt dataframe by minimum retweet subset:
-            self.rt_df = self.rt_df[self.rt_df['rt'] >= threshold]
+            self.curr_rt_df = self.rt_df[self.rt_df['rt'] == threshold]
 
             # Run simulation:
             self.run_sim(threshold)
@@ -316,7 +318,7 @@ class AcrophilySim(TwitterDataProcessor):
             self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False).agg('mean')
 
             # Add column indicating current threshold:
-            self.agg_threshold_df['threshold'] = np.repeat(threshold, len(self.agg_threshold_df))
+            self.agg_threshold_df['threshold'] = self.agg_threshold_df['rt'].astype(int)
 
             # If using full data, keep track of probabilities and confidence intervals now:
             if not self.frac_data:
@@ -450,7 +452,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         """
 
     # Inherit processed data from data prep class:
-    def __init__(self, poli_affil, thresholds=range(1, 41),
+    def __init__(self, poli_affil, thresholds=range(1, 11),
                  frac_data=False, frac_start=None, frac_end=None,
                  users_file=os.path.join('data', 'users_ratings.csv'),
                  rt_file=os.path.join('data', 'rt_network.csv')):
@@ -461,6 +463,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
         # Define joined dataset using TwitterDataProcessor get_retweet_data function:
         self.rt_df = None
+        self.curr_rt_df = pd.DataFrame()
 
         # Initialize simulation threshold range:
         self.thresholds = thresholds
@@ -480,21 +483,27 @@ class MeanAbsDiffSim(TwitterDataProcessor):
     def get_abs_diff_df(self):
 
         # Get random 70% subset of users:
-        self.abs_diff_df = get_random_users(self.rt_df)
+        self.abs_diff_df = get_random_users(self.curr_rt_df)
 
         # Get ego and peer ratings:
         ego_ratings = self.abs_diff_df['orig_rating_ego'].values
         peer_ratings_empi = self.abs_diff_df['orig_rating_peer'].values
 
-        # Randomly permute peer ratings to generate random baseline:
-        peer_ratings_random = np.random.permutation(peer_ratings_empi)
+        # Get all peers from curent rt df:
+        curr_rt_peers = self.curr_rt_df['orig_rating_peer'].values
+
+        # Take random sample of 70% of current rt peer ratings:
+        peer_ratings_random = np.random.choice(curr_rt_peers, size=len(ego_ratings), replace=False)
 
         # Append absolute difference between peer and ego ratings in both conditions:
         self.abs_diff_df['abs_diff_empi'] = np.abs(ego_ratings - peer_ratings_empi)
         self.abs_diff_df['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
 
     # Run simulation within single threshold and append results to dataframe:
-    def run_threshold_sim(self, n=100):
+    def run_threshold_sim(self, n=1000):
+
+        # Initialize threshold df:
+        self.threshold_sim_df = pd.DataFrame()
 
         # Iterate for 100 trials:
         for i in range(n):
@@ -507,21 +516,25 @@ class MeanAbsDiffSim(TwitterDataProcessor):
     # Gets mean results of single threshold run as dataframe:
     def get_agg_threshold_df(self, threshold):
 
+        # Initialize agg threshold df:
+        self.agg_threshold_df = pd.DataFrame()
+
         # Subset based on minimum retweet threshold:
-        self.rt_df = self.rt_df[self.rt_df['rt'] >= threshold]
+        self.curr_rt_df = self.rt_df[self.rt_df['rt'] == threshold]
 
         print(f'Current threshold: {threshold} of {self.thresholds[-1]}', flush=True)
 
-        # Runs simulation for n=100 trials and appends to threshold level df:
+        # Runs simulation for n=1000 trials and appends to threshold level df:
         self.run_threshold_sim()
 
         # Take the aggregate of the threshold df after 100 trials, grouped by ego:
         self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False) \
             .agg(mean_abs_diff_empi=('abs_diff_empi', 'mean'),
-                 mean_abs_diff_random=('abs_diff_random', 'mean'))
+                 mean_abs_diff_random=('abs_diff_random', 'mean'),
+                 threshold=('rt', 'mean'))
 
         # Append threshold to aggregate threshold df:
-        self.agg_threshold_df['threshold'] = np.repeat(threshold, len(self.agg_threshold_df))
+        self.agg_threshold_df['threshold'] = self.agg_threshold_df['threshold'].astype(int)
 
     # Append confidence intervals for mean abs diff for each condition to list:
     def append_confint_lists(self):
@@ -714,8 +727,8 @@ class ProbDiffSim(TwitterDataProcessor):
         self.homophily_df['is_more_extreme_homoph'] = self.count_more_extreme(ego_ratings, peer_ratings_homoph)
         self.homophily_df['is_more_extreme_empi'] = self.count_more_extreme(ego_ratings, peer_ratings_empi)
 
-    # Runs simulation for n=100 trials and creates dataframe with user id and probability differences:
-    def run_sim(self, n=100):
+    # Runs simulation for n=1000 trials and creates dataframe with user id and probability differences:
+    def run_sim(self, n=1000):
 
         # Print statement based on affiliation/fraction conditions:
         print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end,
