@@ -1,0 +1,40 @@
+---
+title: "Retweet Count Plots"
+output: html_document
+---
+
+```{r}
+library(forcats)
+library(ggplot2)
+library(tidyverse)
+library(moments)
+```
+
+
+```{r}
+d <- read.csv('../data/counts_pcts_by_retweet_count.csv')
+d$rt <- factor(d$rt)
+d$count_pct <- paste0(d$count, " (", d$pct, "%)")
+```
+
+
+```{r}
+
+options(scipen=999)
+
+addline_format <- function(x,...){
+    gsub('\\s','\n',x)
+}
+
+d %>% 
+  ggplot(aes(x=rt, y=count, vjust=-0.2)) +
+  geom_bar(stat='identity') +
+  geom_text(aes(label=addline_format(count_pct)), size=2.2) +
+  labs(x='Retweet Count', y='Observation Count', 
+       title='Number of Observations in Dataset by Retweet Count') +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave('../figures/observations_by_retweet_count.jpg', width = 9, height = 6)
+```
+
