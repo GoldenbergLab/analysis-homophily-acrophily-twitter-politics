@@ -762,8 +762,6 @@ class ProbDiffSim(TwitterDataProcessor):
         # Crates column of differences between probabilities in the empirical and homophily conditions:
         self.prob_diff_df['prob_diff'] = prob_more_extreme_empi - prob_more_extreme_homoph
         self.prob_diff_df['poli_affil'] = np.repeat(self.poli_affil, len(self.prob_diff_df))
-        
-        print(self.prob_diff_df.dtypes)
 
         print('Dataframe created. Saving to csv.', flush=True)
 
