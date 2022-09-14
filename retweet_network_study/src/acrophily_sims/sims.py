@@ -314,7 +314,7 @@ class AcrophilySim(TwitterDataProcessor):
             # Run simulation:
             self.run_sim(threshold)
 
-            # Aggregate to take mean results for each user for 100 iterations at threshold:
+            # Aggregate to take mean results for each user for 1000 iterations at threshold:
             self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False).agg('mean')
 
             # Add column indicating current threshold:
@@ -644,7 +644,7 @@ class ProbDiffSim(TwitterDataProcessor):
     to retweet the closest available peer to them and adds a probabilistic element. It records the results
     in a new column of the subset dataframe to later compare with the empirical peer ratings.
 
-    2. run_sim runs 100 iterations of the simulation, where the homophily dataframe is created by calling
+    2. run_sim runs 1000 repetitions of the simulation, where the homophily dataframe is created by calling
     get_homophily_df, and the sim_df is created by concatenating the results of the homophily simulation in
     each iteration. When the 100 trials are complete, a vectorized function (count_more_extreme) creates a
     dummy variable indicating whether a peer is more extreme than the ego for both the homophily and empirical
@@ -727,14 +727,14 @@ class ProbDiffSim(TwitterDataProcessor):
         self.homophily_df['is_more_extreme_homoph'] = self.count_more_extreme(ego_ratings, peer_ratings_homoph)
         self.homophily_df['is_more_extreme_empi'] = self.count_more_extreme(ego_ratings, peer_ratings_empi)
 
-    # Runs simulation for n=1000 trials and creates dataframe with user id and probability differences:
+    # Runs simulation for n=1000 repetitions and creates dataframe with user id and probability differences:
     def run_sim(self, n=1000):
 
         # Print statement based on affiliation/fraction conditions:
         print_condition_statements(self.poli_affil, self.frac_data, self.frac_start, self.frac_end,
                                    sim_type='prob_diff')
 
-        # Run for 100 trials and continually add to the more_extreme_count dataframe:
+        # Add progress bar for 1000 repetitions
         for i in range(n):
             # Establish progress bar:
             progressbar(i, n)
@@ -762,6 +762,8 @@ class ProbDiffSim(TwitterDataProcessor):
         # Crates column of differences between probabilities in the empirical and homophily conditions:
         self.prob_diff_df['prob_diff'] = prob_more_extreme_empi - prob_more_extreme_homoph
         self.prob_diff_df['poli_affil'] = np.repeat(self.poli_affil, len(self.prob_diff_df))
+        
+        print(self.prob_diff_df.dtypes)
 
         print('Dataframe created. Saving to csv.', flush=True)
 
