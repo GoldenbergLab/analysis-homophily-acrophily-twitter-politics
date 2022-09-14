@@ -60,7 +60,6 @@ class TwitterDataProcessor:
         # Load user ratings dataframe if file path exists:
         if os.path.exists(self.users_file):
             self.users_df = pd.read_csv(self.users_file)
-            self.users_df = self.users_df.set_index('userid')
         else:
             return 'Users ratings file does not exist.'
 
@@ -85,6 +84,12 @@ class TwitterDataProcessor:
         # Subset based on min tweet threshold:
         self.users_df = self.users_df[self.users_df['orig_total_count'] >= min_tweets]
 
+        # Convert user ID values to string and set user df user IDs to index:
+        self.users_df['userid'] = self.users_df['userid'].astype(str)
+        self.users_df = self.users_df.set_index('userid')
+        self.rt_df['userid'] = self.rt_df['userid'].astype(str)
+        self.rt_df['rt_userid'] = self.rt_df['rt_userid'].astype(str)
+        
         # Subset retweet network ID to contain only egos and peers that meet min tweet threshold:
         userid_condition = self.rt_df['userid'].isin(self.users_df.index)
         rt_userid_condition = self.rt_df['rt_userid'].isin(self.users_df.index)
