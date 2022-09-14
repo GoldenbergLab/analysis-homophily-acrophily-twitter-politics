@@ -7,9 +7,14 @@ name = "pypi"
 numpy = "*"
 pandas = "*"
 statsmodels = "*"
-pytest = "*"
 flake8 = "*"
 acrophily_sims = {editable = true, path = "."}
+jupyter = "*"
+notebook = "*"
+torch = "*"
+python-dotenv = "*"
+seaborn = "*"
+matplotlib = "*"
 
 [dev-packages]
 
