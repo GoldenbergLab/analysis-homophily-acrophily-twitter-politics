@@ -703,7 +703,7 @@ class ProbDiffSim(TwitterDataProcessor):
 
         # Get all ego and peer ratings:
         ego_ratings = self.homophily_df['orig_rating_ego'].values
-        peer_ratings = self.homophily_df['orig_rating_peer'].values
+        peer_ratings = self.rt_df['orig_rating_peer'].values
 
         # Copy peer ratings for homophily condition:
         homoph_peer_ratings = np.copy(peer_ratings)
