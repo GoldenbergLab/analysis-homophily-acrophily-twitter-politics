@@ -39,7 +39,7 @@ df_long <- cbind(df_long_avg_libcons, df_long_avg_feel[,2:3])
 # Creating variable indicating general political affiliation
 df_long$poli_affil <- ifelse((df_long$poli_avg_libcons == 'avg_libcons_left' | df_long$poli_avg_libcons == 'avg_libcons_ml'), 'left', 'right')
 
-# Creating variable indicating whether rating is from moderate group or not:
+# Creating variable indicating whether rating is from moderates or not:
 df_long$is_moderate <- ifelse(df_long$poli_avg_libcons == 'avg_libcons_ml' | df_long$poli_avg_libcons == 'avg_libcons_mr', 'yes', 'no')
 
 # Removing political affiliation labels for avg_libcons and avg_feel variables:
