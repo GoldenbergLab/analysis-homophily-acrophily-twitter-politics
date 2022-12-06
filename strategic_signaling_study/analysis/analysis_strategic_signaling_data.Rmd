@@ -3,9 +3,15 @@ title: "Analysis of Covert Signaling Data"
 author: "David Bailey"
 ---
 
-```{r read in the data}
+```{r config}
 library(tidyverse)
+```
 
+
+## Read in and pre-process data
+
+```{r}
+# Reading in data
 df <- read.csv("../data/strategic_signaling_data_long.csv")
 
 # Filtering co-partisan tweets only:
