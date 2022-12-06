@@ -62,5 +62,5 @@ df_long <- df_long %>%
   rename(avg_sentiment = avg_feel)
 
 # Saving result:
-write.csv(df_long, '../data/strategic_signaling_data_long.csv', row.names=FALSE)
+write.csv(df_long, '../data/strategic_signaling_data_long_no_moderates.csv', row.names=FALSE)
 ```
