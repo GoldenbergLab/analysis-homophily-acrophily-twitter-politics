@@ -21,7 +21,7 @@ df <- read.csv("../data/Covert-stage1-alltweetsel.csv")
 df <- df %>% filter(avg_libcons_left != 4.0 & avg_libcons_right != 4.0 & avg_libcons_ml != 4.0 & avg_libcons_mr != 4.0)
 
 # Using only averages from target groups:
-df <- df[,c('tweet', 'avg_libcons_left', 'avg_libcons_right', 'avg_libcons_ml', 'avg_libcons_mr', 'avg_feel_left', 'avg_feel_right', 'avg_feel_ml', 'avg_feel_mr')]
+df <- df[,c('tweet', 'avg_libcons_left', 'avg_libcons_right', 'avg_libcons_ml', 'avg_libcons_mr', 'avg_feel_left', 'avg_feel_right', 'avg_feel_ml', 'avg_feel_mr', 'viewed_all')]
 
 # Converting avg_libcons variables to long format:
 df_long_avg_libcons <- df %>% 
@@ -33,13 +33,18 @@ df_long_avg_feel <- df %>%
   pivot_longer(cols=6:9, names_to='poli_avg_feel', values_to='avg_feel') %>%
   select(tweet, poli_avg_feel, avg_feel)
 
+df_views <- df %>%
+  dplyr::select(tweet, viewed_all) %>%
+  distinct()
+
 # Combining avg feel and avg perception variables into one dataframe:
-df_long <- cbind(df_long_avg_libcons, df_long_avg_feel[,2:3])
+df_long <- cbind(df_long_avg_libcons, df_long_avg_feel[,2:3]) %>%
+  left_join(df_views, by = 'tweet')
 
 # Creating variable indicating general political affiliation
 df_long$poli_affil <- ifelse((df_long$poli_avg_libcons == 'avg_libcons_left' | df_long$poli_avg_libcons == 'avg_libcons_ml'), 'left', 'right')
 
-# Creating variable indicating whether rating is from moderates or not:
+# Creating variable indicating whether rating is from moderate group or not:
 df_long$is_moderate <- ifelse(df_long$poli_avg_libcons == 'avg_libcons_ml' | df_long$poli_avg_libcons == 'avg_libcons_mr', 'yes', 'no')
 
 # Removing political affiliation labels for avg_libcons and avg_feel variables:
