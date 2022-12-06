@@ -28,6 +28,7 @@ df_cross <- df %>%
 df_co_gen <- df_co %>%
   filter(is_moderate == 'no')
 
+# Filter out moderates:
 df_cross_gen <- df_cross %>%
   filter(is_moderate == 'no')
 
