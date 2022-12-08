@@ -17,9 +17,6 @@ library(tidyr)
 # Reading in strategic covert signaling data:
 df <- read.csv("../data/Covert-stage1-alltweetsel.csv")
 
-# Filtering out any tweet perceived as moderate by any of the groups:
-df <- df %>% filter(avg_libcons_left != 4.0 & avg_libcons_right != 4.0 & avg_libcons_ml != 4.0 & avg_libcons_mr != 4.0)
-
 # Using only averages from target groups:
 df <- df[,c('tweet', 'avg_libcons_left', 'avg_libcons_right', 'avg_libcons_ml', 'avg_libcons_mr', 'avg_feel_left', 'avg_feel_right', 'avg_feel_ml', 'avg_feel_mr', 'viewed_all')]
 
@@ -62,5 +59,5 @@ df_long <- df_long %>%
   rename(avg_sentiment = avg_feel)
 
 # Saving result:
-write.csv(df_long, '../data/strategic_signaling_data_long_no_moderates.csv', row.names=FALSE)
+write.csv(df_long, '../data/strategic_signaling_data_long.csv', row.names=FALSE)
 ```
