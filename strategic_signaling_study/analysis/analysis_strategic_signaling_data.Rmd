@@ -12,10 +12,13 @@ library(tidyr)
 ## Read in and pre-process data
 
 ```{r}
-library(dplyr)
 
 # Reading in data
-df <- read.csv("../data/strategic_signaling_data_long_no_moderates.csv")
+df <- read.csv("../data/strategic_signaling_data_long.csv")
+
+# Filter out moderate responses:
+# df <- df %>%
+  # filter(avg_perceived != 4.0)
 
 # Filtering co-partisan tweets only:
 df_co <- df %>% 
