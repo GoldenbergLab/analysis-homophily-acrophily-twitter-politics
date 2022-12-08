@@ -161,12 +161,14 @@ class AcrophilySim(TwitterDataProcessor):
         # Initialize confidence interval lists:
         self.confints_empi = list()
         self.confints_homoph = list()
-        self.confints_acroph = list()
+        self.confints_acroph_min = list()
+        self.confints_acroph_max = list()
 
         # Initialize list of probabilities of peer being more extreme:
         self.probs_more_extreme_empi = list()
         self.probs_more_extreme_homoph = list()
-        self.probs_more_extreme_acroph = list()
+        self.probs_more_extreme_acroph_min = list()
+        self.probs_more_extreme_acroph_max = list()
 
         # Initializing simulation dataframes:
         self.acrophily_df = pd.DataFrame()
@@ -177,7 +179,7 @@ class AcrophilySim(TwitterDataProcessor):
 
     # Static method to get acrophily peer:
     @staticmethod
-    def get_acrophily_peer(peer_ratings, ego_rating):
+    def get_acrophily_peer_min(peer_ratings, ego_rating):
 
         # Find differences between peer ratings and ego rating:
         rating_diffs = peer_ratings - ego_rating
@@ -189,13 +191,29 @@ class AcrophilySim(TwitterDataProcessor):
         closest_peer_rating = peer_ratings[acroph_min_diff_idx]
 
         return closest_peer_rating, acroph_min_diff_idx
+        
+    # Static method to get pure acrophily peer:
+    @staticmethod
+    def get_acrophily_peer_max(peer_ratings, ego_rating):
+
+        # Find differences between peer ratings and ego rating:
+        rating_diffs = peer_ratings - ego_rating
+
+        # Find max difference index with added cost to differences below 0:
+        acroph_max_diff_idx = np.where(rating_diffs >= 0, rating_diffs, rating_diffs**2 + 100).argmax()
+
+        # Uses index of farthest element to get element:
+        max_diff_peer_rating = peer_ratings[acroph_max_diff_idx]
+
+        return max_diff_peer_rating, acroph_max_diff_idx
 
     # Get chosen peers for both homophily and acrophily conditions:
-    def get_chosen_peers(self, homoph_peer_ratings, acroph_peer_ratings, ego_ratings):
+    def get_chosen_peers(self, homoph_peer_ratings, acroph_peer_ratings_min, acroph_peer_ratings_max, ego_ratings):
 
         # Initialize list of closest peers based on homophily simulation:
         homoph_chosen_peer_ratings = []
-        acroph_chosen_peer_ratings = []
+        acroph_chosen_peer_ratings_min = []
+        acroph_chosen_peer_ratings_max = []
 
         # For each ego rating in subset:
         for ego_rating in ego_ratings:
@@ -203,18 +221,22 @@ class AcrophilySim(TwitterDataProcessor):
             # Get homophily and acrophily peer ratings and indexes within respective ratings lists:
             homoph_chosen_peer_rating, homoph_chosen_peer_idx = get_homophily_peer(homoph_peer_ratings,
                                                                                    ego_rating)
-            acroph_chosen_peer_rating, acroph_chosen_peer_idx = self.get_acrophily_peer(acroph_peer_ratings,
+            acroph_chosen_peer_rating_min, acroph_chosen_peer_idx_min = self.get_acrophily_peer_min(acroph_peer_ratings_min,
                                                                                         ego_rating)
+            acroph_chosen_peer_rating_max, acroph_chosen_peer_idx_max = self.get_acrophily_peer_max(acroph_peer_ratings_max,
+                                                                            ego_rating)
 
             # Remove selected peers from respective peer pools:
             homoph_peer_ratings = np.delete(homoph_peer_ratings, homoph_chosen_peer_idx)
-            acroph_peer_ratings = np.delete(acroph_peer_ratings, acroph_chosen_peer_idx)
+            acroph_peer_ratings_min = np.delete(acroph_peer_ratings_min, acroph_chosen_peer_idx_min)
+            acroph_peer_ratings_max = np.delete(acroph_peer_ratings_max, acroph_chosen_peer_idx_max)
 
             # Append selected peer to respective closest peers list:
             homoph_chosen_peer_ratings.append(homoph_chosen_peer_rating)
-            acroph_chosen_peer_ratings.append(acroph_chosen_peer_rating)
+            acroph_chosen_peer_ratings_min.append(acroph_chosen_peer_rating_min)
+            acroph_chosen_peer_ratings_max.append(acroph_chosen_peer_rating_max)
 
-        return homoph_chosen_peer_ratings, acroph_chosen_peer_ratings
+        return homoph_chosen_peer_ratings, acroph_chosen_peer_ratings_min, acroph_chosen_peer_ratings_max
 
     # Run homophily simulation and append homophily peer ratings to new column in dataframe:
     def get_acrophily_df(self):
@@ -228,16 +250,19 @@ class AcrophilySim(TwitterDataProcessor):
 
         # Make copy of peer ratings for homophily and acrophily simulations:
         homoph_peer_ratings = np.copy(peer_ratings)
-        acroph_peer_ratings = np.copy(peer_ratings)
+        acroph_peer_ratings_min = np.copy(peer_ratings)
+        acroph_peer_ratings_max = np.copy(peer_ratings)
 
         # Get chosen peers for each condition:
-        homoph_chosen_peer_ratings, acroph_chosen_peer_ratings = self.get_chosen_peers(homoph_peer_ratings,
-                                                                                       acroph_peer_ratings,
+        homoph_chosen_peer_ratings, acroph_chosen_peer_ratings_min, acroph_chosen_peer_ratings_max = self.get_chosen_peers(homoph_peer_ratings,
+                                                                                       acroph_peer_ratings_min,
+                                                                                       acroph_peer_ratings_max,
                                                                                        ego_ratings)
 
         # Create new column for closest peers based on strategy:
         self.acrophily_df['homoph_rating_peer'] = homoph_chosen_peer_ratings
-        self.acrophily_df['acroph_rating_peer'] = acroph_chosen_peer_ratings
+        self.acrophily_df['acroph_rating_peer_min'] = acroph_chosen_peer_ratings_min
+        self.acrophily_df['acroph_rating_peer_max'] = acroph_chosen_peer_ratings_max
 
     # Gets proportion of egos with peers more extreme on average:
     def get_prob_more_extreme(self, peer_ratings):
@@ -279,12 +304,14 @@ class AcrophilySim(TwitterDataProcessor):
         # Define P(peer more extreme) for each condition:
         prob_more_extreme_empi = self.get_prob_more_extreme(self.agg_threshold_df['orig_rating_peer'])
         prob_more_extreme_homoph = self.get_prob_more_extreme(self.agg_threshold_df['homoph_rating_peer'])
-        prob_more_extreme_acroph = self.get_prob_more_extreme(self.agg_threshold_df['acroph_rating_peer'])
+        prob_more_extreme_acroph_min = self.get_prob_more_extreme(self.agg_threshold_df['acroph_rating_peer_min'])
+        prob_more_extreme_acroph_max = self.get_prob_more_extreme(self.agg_threshold_df['acroph_rating_peer_max'])
 
         # Append results to list:
         self.probs_more_extreme_empi.append(prob_more_extreme_empi)
         self.probs_more_extreme_homoph.append(prob_more_extreme_homoph)
-        self.probs_more_extreme_acroph.append(prob_more_extreme_acroph)
+        self.probs_more_extreme_acroph_min.append(prob_more_extreme_acroph_min)
+        self.probs_more_extreme_acroph_max.append(prob_more_extreme_acroph_max)
 
     # Append P(peer more extreme) confidence intervals to lists for each condition:
     def append_confint_lists(self):
@@ -292,12 +319,14 @@ class AcrophilySim(TwitterDataProcessor):
         # Get confidence intervals for each condition for threshold:
         confint_empi = self.get_proportion_confint(self.agg_threshold_df['orig_rating_peer'])
         confint_homoph = self.get_proportion_confint(self.agg_threshold_df['homoph_rating_peer'])
-        confint_acroph = self.get_proportion_confint(self.agg_threshold_df['acroph_rating_peer'])
+        confint_acroph_min = self.get_proportion_confint(self.agg_threshold_df['acroph_rating_peer_min'])
+        confint_acroph_max = self.get_proportion_confint(self.agg_threshold_df['acroph_rating_peer_max'])
 
         # Append confidence intervals to list:
         self.confints_empi.append(confint_empi)
         self.confints_homoph.append(confint_homoph)
-        self.confints_acroph.append(confint_acroph)
+        self.confints_acroph_min.append(confint_acroph_min)
+        self.confints_acroph_max.append(confint_acroph_max)
 
     # Run simulation across multiple thresholds to create simulation dataframe:
     def get_sim_df(self):
@@ -333,14 +362,16 @@ class AcrophilySim(TwitterDataProcessor):
 
         self.agg_sim_df['prob_more_extreme_empi'] = self.probs_more_extreme_empi
         self.agg_sim_df['prob_more_extreme_homoph'] = self.probs_more_extreme_homoph
-        self.agg_sim_df['prob_more_extreme_acroph'] = self.probs_more_extreme_acroph
+        self.agg_sim_df['prob_more_extreme_acroph_min'] = self.probs_more_extreme_acroph_min
+        self.agg_sim_df['prob_more_extreme_acroph_max'] = self.probs_more_extreme_acroph_max
 
     # Append confidence intervals per threshold for each condition:
     def get_confint_cols(self):
 
         self.agg_sim_df['confint_empi'] = self.confints_empi
         self.agg_sim_df['confint_homoph'] = self.confints_homoph
-        self.agg_sim_df['confint_acroph'] = self.confints_acroph
+        self.agg_sim_df['confint_acroph_min'] = self.confints_acroph_min
+        self.agg_sim_df['confint_acroph_max'] = self.confints_acroph_max
 
     # Get aggregate sim df across thresholds:
     def get_agg_sim_df(self):
@@ -357,8 +388,8 @@ class AcrophilySim(TwitterDataProcessor):
         # Append political affiliation:
         self.agg_sim_df['poli_affil'] = np.repeat(self.poli_affil, len(self.agg_sim_df))
         self.agg_sim_df = self.agg_sim_df[['threshold', 'prob_more_extreme_empi', 'prob_more_extreme_homoph',
-                                           'prob_more_extreme_acroph', 'confint_empi',
-                                           'confint_homoph', 'confint_acroph', 'poli_affil']]
+                                           'prob_more_extreme_acroph_min', 'prob_more_extreme_acroph_max', 'confint_empi',
+                                           'confint_homoph', 'confint_acroph_min', 'confint_acroph_max', 'poli_affil']]
 
     # Create dataframe file path:
     def get_file_path(self):
@@ -400,7 +431,7 @@ class AcrophilySim(TwitterDataProcessor):
         else:
             # Save sim df to aggregate later if using only fraction of data:
             self.sim_df = self.sim_df[['threshold', 'orig_rating_ego', 'orig_rating_peer',
-                                       'homoph_rating_peer', 'acroph_rating_peer']]
+                                       'homoph_rating_peer', 'acroph_rating_peer_min', 'acroph_rating_peer_max']]
             self.sim_df.to_csv(file_path, index=False)
 
         print('Dataframe saved.', flush=True)
