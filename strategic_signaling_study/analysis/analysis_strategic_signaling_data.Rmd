@@ -3,32 +3,27 @@ title: "Analysis of Strategic Signaling Data"
 author: "David Bailey"
 ---
 
-```{r config}
-library(dplyr)
-library(tidyr)
-```
-
 
 ## Read in and pre-process data
 
-```{r}
-
+```{r seeting data and libraries}
+library(tidyverse)
+library(lme4)
+library (lmerTest)
 # Reading in data
 df <- read.csv("../data/strategic_signaling_data_long.csv")
 
 # Filter out moderate responses:
-# df <- df %>%
-  # filter(avg_perceived != 4.0)
+ df <- df %>%
+   filter(avg_perceived != 4.0)
 
 # Filtering co-partisan tweets only:
 df_co <- df %>% 
-  filter(co_cross == 'co') %>%
-  select(-tweet) # Drop tweet column for predictions
+  filter(co_cross == 'co') 
 
 # Filtering cross-partisan tweets only:
 df_cross <- df %>% 
-  filter(co_cross == 'cross') %>%
-  select(-tweet)
+  filter(co_cross == 'cross') 
 
 # Filtering to general groups only:
 df_co_gen <- df_co %>%
@@ -44,6 +39,28 @@ df_co_mod <- df_co %>%
 df_cross_mod <- df_cross %>%
   filter(is_moderate == 'yes')
 
+
+
+
+```
+
+
+```{r descriptives}
+
+
+
+length(unique(df_co$tweet))
+
+des = df_co_gen %>% 
+  group_by (tweet) %>% 
+  slice(1)
+
+
+mean(des$viewed_all)
+sd(des$viewed_all)
+
+min(des$amount)
+table(des$amount)
 ```
 
 
@@ -51,43 +68,30 @@ df_cross_mod <- df_cross %>%
 
 ### Average sentiment by average perceived and political affiliation (groups overall)
 
-```{r}
+```{r general}
+df_co_gen$poli_affil = factor(df_co_gen$poli_affil)
 # Effect coding at 1 and -1:
 df_co_gen$poli_affil_coded <- ifelse(df_co_gen$poli_affil == 'left', 1, -1)
 
 # Model with interaction between perceived copartisanship and political affiliation:
-co_gen_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded + viewed_all, data=df_co_gen)
+co_gen_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded + viewed_all, data=df_co_gen) ;summary(co_gen_model_coded)
+
+confint(co_gen_model_coded)
+
+#look at simple effects
+r <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil + viewed_all, data=df_co_gen) ;summary(r)
+
+df_co_gen$poli_affil = relevel(df_co_gen$poli_affil, "right")
+
+r <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil + viewed_all, data=df_co_gen) ;summary(r)
 
 
-summary(co_gen_model_coded)
+confint(co_gen_model_coded)
+
+
 ```
 
 
-```{r}
-# Centering intercept on left-wing participants:
-df_co_gen$poli_affil <- relevel(factor(df_co_gen$poli_affil), 'left')
-
-# Model with interaction between perceived copartisanship and political affiliation:
-co_gen_model_left <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil + viewed_all, data=df_co_gen)
-
-
-summary(co_gen_model_left)
-
-```
-
-
-```{r}
-
-# Centering intercept on right-wing participants:
-df_co_gen$poli_affil <- relevel(factor(df_co_gen$poli_affil), 'right')
-
-# Model with interaction between perceived copartisanship and political affiliation:
-co_gen_model_right <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil + viewed_all, data=df_co_gen)
-
-
-summary(co_gen_model_right)
-
-```
 
 ### Average sentiment by average perceived and political affiliation (moderates only)
 
@@ -96,11 +100,25 @@ summary(co_gen_model_right)
 # Effect coded at 1 and -1:
 df_co_mod$poli_affil_coded <- ifelse(df_co_mod$poli_affil == 'left', 1, -1)
 
+df_co_mod$poli_affil = factor(df_co_mod$poli_affil)
+
+# Effect coded at 1 and -1:
+df_co_mod$poli_affil_coded <- ifelse(df_co_mod$poli_affil == 'left', 1, -1)
+
 # Model with interaction between perceived copartisanship and political affiliation:
-co_mod_model_coded <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded + viewed_all, data=df_co_mod)
+r <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil_coded + viewed_all, data=df_co_mod) ;summary(r)
+
+confint(r)
+
+#look at simple effects
+r <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil + viewed_all, data=df_co_mod) ;summary(r)
+
+df_co_mod$poli_affil = relevel(df_co_mod$poli_affil, "right")
 
 
-summary(co_mod_model_coded)
+r <- lm(avg_sentiment ~scale(avg_perceived)*poli_affil + viewed_all, data=df_co_mod) ;summary(r)
+
+confint(r)
 ```
 
 
