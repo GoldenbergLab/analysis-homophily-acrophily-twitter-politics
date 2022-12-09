@@ -14,11 +14,7 @@ library(tidyr)
 ```{r}
 
 # Reading in coefficient data:
-coef_cons <- read.csv('../data/user_coef_right.csv')
-coef_libs <- read.csv('../data/user_coef_left.csv')
-
-
-coef_df <- rbind(coef_cons, coef_libs)
+coef_df <- read.csv('../data/user_coef.csv')
 
 # Reading in long-format mean absolute difference data:
 abs_diff_df_long <- read.csv('../data/mean_abs_diff_long.csv') %>%
@@ -34,20 +30,33 @@ acroph_df_long <- read.csv('../data/acrophily_sim_long.csv') %>%
 
 ```{r}
 
-label_names <- c('right' = 'Conservatives', 'left' = 'Liberals')
+# Get mean user coef for each political affiliation:
+coef_df_means <- coef_df %>%
+  dplyr::select(-userid) %>%
+  group_by(poli_affil) %>%
+  summarise_all(mean) %>%
+  mutate(user_coef = round(user_coef, digits = 4),
+         color = ifelse(poli_affil == 'right', 'red', 'blue'))
 
-# Mean coefficient for conservatives and liberals (for labels):
-cons_mean <- round(mean(coef_cons$coef), digits=4)
-libs_mean <- round(mean(coef_libs$coef), digits=4)
+# Get means for labels:
+cons_mean <- coef_df_means %>%
+  filter(poli_affil == 'right') %>%
+  select(user_coef)
+
+libs_mean <- coef_df_means %>%
+  filter(poli_affil == 'left') %>%
+  select(user_coef)
+
+label_names <- c('right' = glue('Conservatives (Mean = {cons_mean$user_coef})'), 'left' = glue('Liberals (Mean = {libs_mean$user_coef})'))
 
 coef_distplot <- coef_df %>%
-  ggplot(aes(x=coef, color=poli_affil)) +
+  ggplot(aes(x=user_coef, color=poli_affil)) +
   facet_wrap(~poli_affil, labeller=as_labeller(label_names))+
   geom_density()+
   scale_color_manual(labels = c("Liberal", "Conservative"), values = c("blue", "red"))+
   labs(x='Acrophily Coefficient', y="Density", color='Political Affiliation')+
   theme_bw()+
-  geom_vline(data=coef_df_means, aes(xintercept=mean_coef), linetype='dashed', color=coef_df_means$color)
+  geom_vline(data=coef_df_means, aes(xintercept=user_coef), linetype='dashed', color=coef_df_means$color)
 
 ggsave('../figures/coef_distplot.jpg', width=14, height=7)
 
@@ -93,22 +102,4 @@ ggsave('../figures/acroph_plot.jpg', width = 8, height = 7)
 acroph_plot
 ```
 
-
-```{r}
-
-d_rt <- read.csv('../data/processed_rt_user_data.csv') %>%
-  filter(rt <= 20)
-
-rt_distplot <- d_rt %>%
-  ggplot(aes(x=rt)) +
-  geom_density()+
-  labs(x='Retweet Count', y="Density")+
-  theme_bw()+
-  geom_vline(aes(xintercept=10), linetype='dashed')+
-  ggtitle('Distribution of Retweet Counts Among All Participants')
-
-ggsave('../figures/rt_distplot.jpg', width=14, height=7)
-
-rt_distplot
-```
 
