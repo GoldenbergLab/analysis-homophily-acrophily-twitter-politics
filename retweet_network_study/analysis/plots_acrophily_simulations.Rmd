@@ -24,7 +24,27 @@ abs_diff_df_long <- read.csv('../data/mean_abs_diff_long.csv') %>%
 acroph_df_long <- read.csv('../data/acrophily_sim_long.csv') %>%
   filter(threshold <= 5)
 
+# Read in processed retweet network data:
+d_rt <- read.csv('../data/rt_data_processed.csv')
 ```
+
+# Distribution of user political ratings:
+```{r}
+d_rt %>% 
+  mutate(poli_affil = ifelse(poli_affil == 'right', 'Conservatives', 'Liberals')) %>%
+  ggplot(aes(x=orig_rating_ego, vjust=-0.2, color=poli_affil)) +
+  geom_histogram(fill='transparent') +
+  facet_wrap(~poli_affil) +
+  labs(x='User Political Rating', y='Count',
+       title='User Political Rating by Political Affiliation', color = '') +
+  scale_color_manual(labels = c("Conservatives", "Liberals"), values = c("red", "blue"))+
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = 'none')
+
+ggsave('../figures/user_poli_ratings.jpg', width = 9, height = 6)
+```
+
 
 # Distribution of simulation coefficients
 
