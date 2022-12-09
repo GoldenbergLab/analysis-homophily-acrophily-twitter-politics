@@ -80,3 +80,18 @@ acroph_df_long <- cbind(df_long_probs, df_long_ci_lower, df_long_ci_upper)
 # Save results:
 write.csv(acroph_df_long, '../data/acrophily_sim_long.csv', row.names=FALSE)
 ```
+
+
+# Combine left/right user coefficient data:
+```{r}
+# Reading in coefficient data:
+coef_cons <- read.csv('../data/user_coef_right.csv')
+coef_libs <- read.csv('../data/user_coef_left.csv')
+
+coef_df <- rbind(coef_cons, coef_libs) %>%
+  mutate(user_coef = prob_diff / sd(prob_diff)) %>%
+  dplyr::select(userid, user_coef, poli_affil)
+
+write.csv(coef_df, '../data/user_coef.csv', row.names = FALSE)
+```
+
