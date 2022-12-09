@@ -22,13 +22,21 @@ def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data')
     if os.path.exists(sim_file_path):
         raise Exception("File already exists. Will not overwrite.")
 
-    else:
+    if not sim_type == 'prob_diff':
         files = os.listdir(data_folder_path)
         sim_data_files = [os.path.join(data_folder_path, file) for file in files
                           if file.startswith(f'{sim_type}_sim_{poli_affil}_')]
 
         print(f'{len(sim_data_files)} files found for sim type {sim_type}. Merging files.',
               flush=True)
+              
+    else:
+        files = os.listdir(data_folder_path)
+        sim_data_files = [os.path.join(data_folder_path, file) for file in files
+                        if file.startswith(f'{sim_type}_{poli_affil}_')]
+
+        print(f'{len(sim_data_files)} files found for sim type {sim_type}. Merging files.',
+            flush=True)
 
     return sim_data_files
 
@@ -73,11 +81,13 @@ def get_probs_more_extreme(df, col):
 def get_probs_more_extreme_cols(df, agg_df):
     probs_more_extreme_empi = get_probs_more_extreme(df, col='orig_rating_peer')
     probs_more_extreme_homoph = get_probs_more_extreme(df, col='homoph_rating_peer')
-    probs_more_extreme_acroph = get_probs_more_extreme(df, col='acroph_rating_peer')
+    probs_more_extreme_acroph_min = get_probs_more_extreme(df, col='acroph_rating_peer_min')
+    probs_more_extreme_acroph_max = get_probs_more_extreme(df, col='acroph_rating_peer_max')
 
     agg_df['prob_more_extreme_empi'] = probs_more_extreme_empi
     agg_df['prob_more_extreme_homoph'] = probs_more_extreme_homoph
-    agg_df['prob_more_extreme_acroph'] = probs_more_extreme_acroph
+    agg_df['prob_more_extreme_acroph_min'] = probs_more_extreme_acroph_min
+    agg_df['prob_more_extreme_acroph_max'] = probs_more_extreme_acroph_max
 
     return agg_df
 
@@ -134,7 +144,8 @@ def get_confint_cols(sim_type, df, agg_df):
     else:
         confints_lower_empi, confints_upper_empi = get_proportion_confints(df, col='orig_rating_peer')
         confints_lower_homoph, confints_upper_homoph = get_proportion_confints(df, col='homoph_rating_peer')
-        confints_lower_acroph, confints_upper_acroph = get_proportion_confints(df, col='acroph_rating_peer')
+        confints_lower_acroph_min, confints_upper_acroph_min = get_proportion_confints(df, col='acroph_rating_peer_min')
+        confints_lower_acroph_max, confints_upper_acroph_max = get_proportion_confints(df, col='acroph_rating_peer_max')
 
         agg_df['ci_empi_lower'] = confints_lower_empi
         agg_df['ci_empi_upper'] = confints_upper_empi
@@ -142,8 +153,11 @@ def get_confint_cols(sim_type, df, agg_df):
         agg_df['ci_homoph_lower'] = confints_lower_homoph
         agg_df['ci_homoph_upper'] = confints_upper_homoph
 
-        agg_df['ci_acroph_lower'] = confints_lower_acroph
-        agg_df['ci_acroph_upper'] = confints_upper_acroph
+        agg_df['ci_acroph_lower_min'] = confints_lower_acroph_min
+        agg_df['ci_acroph_upper_min'] = confints_upper_acroph_min
+        
+        agg_df['ci_acroph_lower_max'] = confints_lower_acroph_max
+        agg_df['ci_acroph_upper_max'] = confints_upper_acroph_max
 
     return agg_df
 
@@ -175,16 +189,15 @@ def save_agg_df(sim_file_path, agg_df):
         raise Exception("File already exists. Will not overwrite it.")
 
 
-def main(sim_type, poli_affil):
-    sim_file_path = get_sim_file_path(sim_type, poli_affil)
-    df = merge_sim_files('mean_abs_diff', 'right')
-    agg_df = get_agg_df('mean_abs_diff', df, 'right')
-    save_agg_df(sim_file_path, agg_df)
-
 if __name__ == '__main__':
-    sim_type = 'acrophily'
+    sim_type = 'prob_diff'
     poli_affil = 'right'
     sim_file_path = get_sim_file_path(sim_type, poli_affil)
     df = merge_sim_files(sim_type, poli_affil)
-    agg_df = get_agg_df(sim_type, df, poli_affil)
-    save_agg_df(sim_file_path, agg_df)
+    
+    if not sim_type == 'prob_diff':
+        agg_df = get_agg_df(sim_type, df, poli_affil)
+        save_agg_df(sim_file_path, agg_df)
+        
+    else:
+        save_agg_df(sim_file_path, df)
