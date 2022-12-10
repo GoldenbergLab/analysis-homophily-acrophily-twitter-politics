@@ -110,14 +110,14 @@ label_names <- c('right' = 'Conservatives', 'left' = 'Liberals')
 
 acroph_plot <- acroph_df_long %>%
   ggplot(aes(x=threshold, y=prob_more_extreme, group=sim_condition, color = sim_condition)) +
-  facet_wrap(~poli_affil, labeller=as_labeller(label_names), ncol = 1)+
+  facet_wrap(~poli_affil, labeller=as_labeller(label_names))+
   geom_line()+
   geom_errorbar(aes(ymin=ci_lower, ymax=ci_upper, color=sim_condition), alpha=0.3) +
-  scale_color_manual(labels = c("Acrophily", "Empirical", "Homophily"), values = c("red", "green", "blue"))+
+  scale_color_manual(labels = c("Pure Acrophily", "Acrophily", "Empirical", "Homophily"), values = c("red", "orange", "green", "blue"))+
   labs(x='Retweet Number', y="P(Peer More Extreme)", color="Simulation Condition")+
   theme_bw()
 
-ggsave('../figures/acroph_plot.jpg', width = 8, height = 7)
+ggsave('../figures/acrophily_sim_plot.jpg', width = 8, height = 7)
 
 acroph_plot
 ```

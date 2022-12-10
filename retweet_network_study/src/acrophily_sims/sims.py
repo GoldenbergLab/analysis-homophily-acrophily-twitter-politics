@@ -199,8 +199,8 @@ class AcrophilySim(TwitterDataProcessor):
         # Find differences between peer ratings and ego rating:
         rating_diffs = peer_ratings - ego_rating
 
-        # Find max difference index with added cost to differences below 0:
-        acroph_max_diff_idx = np.where(rating_diffs >= 0, rating_diffs, rating_diffs**2 + 100).argmax()
+        # Find max difference index:
+        acroph_max_diff_idx = rating_diffs.argmax()
 
         # Uses index of farthest element to get element:
         max_diff_peer_rating = peer_ratings[acroph_max_diff_idx]
