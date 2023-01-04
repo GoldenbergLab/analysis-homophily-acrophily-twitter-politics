@@ -47,8 +47,6 @@ df_cross_mod <- df_cross %>%
 
 ```{r descriptives}
 
-
-
 length(unique(df_co$tweet))
 
 des = df_co_gen %>% 

@@ -92,7 +92,7 @@ def get_probs_more_extreme_cols(df, agg_df):
     return agg_df
 
 
-def get_proportion_confints(df, col):
+def get_proportion_confints(df, col): #df here is all the merged files combines whereas each line is a single participant
 
     thresholds = np.unique(df['threshold'])
 
