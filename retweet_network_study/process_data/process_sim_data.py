@@ -7,7 +7,7 @@ from statsmodels.stats.proportion import proportion_confint
 
 
 # Get file path based on simulation:
-def get_sim_file_path(sim_type, poli_affil, data_folder_path='data'):
+def get_sim_file_path(sim_type, poli_affil, data_folder_path='data/sim_data'):
     if sim_type == 'prob_diff':
         sim_file_name = f'user_coef_{poli_affil}.csv'
     else:
@@ -18,7 +18,7 @@ def get_sim_file_path(sim_type, poli_affil, data_folder_path='data'):
     return sim_file_path
 
 
-def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data'):
+def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data/sim_data'):
     if os.path.exists(sim_file_path):
         raise Exception("File already exists. Will not overwrite.")
 
@@ -29,7 +29,7 @@ def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data')
 
         print(f'{len(sim_data_files)} files found for sim type {sim_type}. Merging files.',
               flush=True)
-              
+
     else:
         files = os.listdir(data_folder_path)
         sim_data_files = [os.path.join(data_folder_path, file) for file in files
@@ -41,7 +41,7 @@ def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data')
     return sim_data_files
 
 
-def merge_sim_files(sim_type, poli_affil, data_folder_path='data'):
+def merge_sim_files(sim_type, poli_affil, data_folder_path='data/sim_data'):
     # Get sim file path:
     sim_file_path = get_sim_file_path(sim_type, poli_affil, data_folder_path)
 
@@ -155,7 +155,7 @@ def get_confint_cols(sim_type, df, agg_df):
 
         agg_df['ci_acroph_lower_min'] = confints_lower_acroph_min
         agg_df['ci_acroph_upper_min'] = confints_upper_acroph_min
-        
+
         agg_df['ci_acroph_lower_max'] = confints_lower_acroph_max
         agg_df['ci_acroph_upper_max'] = confints_upper_acroph_max
 
@@ -194,10 +194,10 @@ if __name__ == '__main__':
     poli_affil = 'right'
     sim_file_path = get_sim_file_path(sim_type, poli_affil)
     df = merge_sim_files(sim_type, poli_affil)
-    
+
     if not sim_type == 'prob_diff':
         agg_df = get_agg_df(sim_type, df, poli_affil)
         save_agg_df(sim_file_path, agg_df)
-        
+
     else:
         save_agg_df(sim_file_path, df)

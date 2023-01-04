@@ -49,7 +49,6 @@ ggsave('../figures/user_poli_ratings.jpg', width = 9, height = 6)
 # Distribution of simulation coefficients
 
 ```{r}
-
 # Get mean user coef for each political affiliation:
 coef_df_means <- coef_df %>%
   dplyr::select(-userid) %>%
@@ -92,10 +91,11 @@ abs_diff_plot <- abs_diff_df_long %>%
   ggplot(aes(x=threshold, y=mean_abs_diff, group=sim_condition, color=sim_condition)) +
   facet_wrap(~poli_affil, labeller=as_labeller(label_names), ncol = 1)+
   geom_line()+
-  geom_errorbar(aes(ymin=ci_lower, ymax=ci_upper, color=sim_condition), alpha=0.3)+
+  geom_errorbar(aes(ymin=ci_lower, ymax=ci_upper, color=sim_condition), alpha=0.2)+
   scale_color_manual(labels = c("Empirical", "Random"), values = c("orange", "blue"))+
   labs(x='Retweet Number', y="Mean Absolute Difference", color="Simulation Condition")+
-  theme_bw()
+  theme_bw();abs_diff_plot
+
 
 ggsave('../figures/abs_diff_plot.jpg', width=8, height=7)
 
