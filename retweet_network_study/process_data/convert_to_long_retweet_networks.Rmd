@@ -48,8 +48,8 @@ write.csv(abs_diff_df_long, '../data/mean_abs_diff_long.csv', row.names=FALSE)
 
 ```{r}
 # Read in liberal and conservative datasets:
-acroph_libs_df <- read.csv('../data/acrophily_sim_left.csv')
-acroph_cons_df <- read.csv('../data/acrophily_sim_right.csv')
+acroph_libs_df <- read.csv('../data/acrophily_sim_data/acrophily_sim_left.csv')
+acroph_cons_df <- read.csv('../data/acrophily_sim_data/acrophily_sim_right.csv')
 
 # Bind liberal and conservative data:
 acroph_df <- rbind(acroph_libs_df, acroph_cons_df)
@@ -59,7 +59,6 @@ acroph_df <- acroph_df %>%
 
 acroph_df
 
-# Converting mean abs diff columns to long format and removing unnecessary columns:
 df_long_probs <- acroph_df %>% 
   pivot_longer(cols=2:5, names_to='sim_condition', values_to='prob_more_extreme') %>%
   select(-c(ci_empi_lower, ci_empi_upper, ci_homoph_lower, ci_homoph_upper,
@@ -78,7 +77,8 @@ df_long_ci_upper <- acroph_df %>%
             prob_more_extreme_acroph_max, ci_empi_lower, ci_homoph_lower, ci_acroph_lower_min, ci_acroph_lower_max))
 
 # Combining avg feel and avg perception variables into one dataframe:
-acroph_df_long <- cbind(df_long_probs, df_long_ci_lower, df_long_ci_upper)
+acroph_df_long <- cbind(df_long_probs, df_long_ci_lower, df_long_ci_upper) %>% 
+  select(-ci_lower_condition, -ci_upper_condition)
 
 acroph_df_long
 

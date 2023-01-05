@@ -191,7 +191,7 @@ def save_agg_df(sim_file_path, agg_df):
 
 if __name__ == '__main__':
     sim_type = 'acrophily'
-    poli_affil = 'right'
+    poli_affil = 'left'
     sim_file_path = get_sim_file_path(sim_type, poli_affil)
     df = merge_sim_files(sim_type, poli_affil)
 
