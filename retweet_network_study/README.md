@@ -33,6 +33,20 @@ As an example, if you wish to run the mean absolute difference simulation on the
 python -m acrophily_sims -s 'mean_abs_diff' -p 'right' -f True -fs 0.0 -fe 0.1
 ```
 
+## Processing Simulation Data
+
+Once the simulations have been run, you can run the following command to generate single aggregated files for each political affiliation:
+
+'''
+python3 process_data/process_sim_data.py
+'''
+
+To then convert to long format, run the R Markdown script convert_to_long_retweet_networks.Rmd
+
+## Visualizing Results
+
+Run the plots_acrophily_simulations.Rmd script to produce visualizations of the results of each simulation.
+
 ## Directories
 
 ### Data
