@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import ast
 import os
 import numpy as np
@@ -5,9 +6,29 @@ import pandas as pd
 import statsmodels.stats.api as sms
 from statsmodels.stats.proportion import proportion_confint
 
+# Parse arguments and pass to arguments object:
+def get_args(args=None):
+
+    # Initialize argument parser for command line:
+    parser = ArgumentParser(prog='Simulation Data Processor')
+    
+        # Create command for data path:
+    parser.add_argument('-d', '--data_folder_path', default="data",
+                        help="Pathway to the data files to process (default: data")
+
+    # Create command for simulation type:
+    parser.add_argument('-s', '--sim_type', default="acrophily",
+                        help="Type of simulation you wish to run (acrophily/prob_diff/mean_abs_diff)")
+
+    # Create command for political affiliation:
+    parser.add_argument('-p', '--poli_affil', default="left",
+                        help="Political affiliation subset you wish to run simulation on (left/right)")
+
+    return parser.parse_args(args=args)
+
 
 # Get file path based on simulation:
-def get_sim_file_path(sim_type, poli_affil, data_folder_path='data/sim_data'):
+def get_sim_file_path(sim_type, poli_affil, data_folder_path):
     if sim_type == 'prob_diff':
         sim_file_name = f'user_coef_{poli_affil}.csv'
     else:
@@ -18,7 +39,7 @@ def get_sim_file_path(sim_type, poli_affil, data_folder_path='data/sim_data'):
     return sim_file_path
 
 
-def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data/sim_data'):
+def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path):
     if os.path.exists(sim_file_path):
         raise Exception("File already exists. Will not overwrite.")
 
@@ -41,12 +62,13 @@ def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path='data/s
     return sim_data_files
 
 
-def merge_sim_files(sim_type, poli_affil, data_folder_path='data/sim_data'):
+def merge_sim_files(sim_type, poli_affil, data_folder_path):
+
     # Get sim file path:
     sim_file_path = get_sim_file_path(sim_type, poli_affil, data_folder_path)
 
     # Get sim data files:
-    sim_data_files = get_data_files(sim_type, poli_affil, sim_file_path)
+    sim_data_files = get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path)
 
     # Initialize dataframe:
     df = pd.DataFrame()
@@ -187,17 +209,24 @@ def save_agg_df(sim_file_path, agg_df):
         print('Processed dataframe successfully saved.', flush=True)
     else:
         raise Exception("File already exists. Will not overwrite it.")
+        
+        
+def main():
+
+    args = get_args()
+    
+    assert args.sim_type in args.data_folder_path, 'Data Files Pathway and Simulation Specified Do Not Match.'
+    
+    sim_file_path = get_sim_file_path(args.sim_type, args.poli_affil, args.data_folder_path)
+    df = merge_sim_files(args.sim_type, args.poli_affil, args.data_folder_path)
+    
+    if not args.sim_type == 'prob_diff':
+        agg_df = get_agg_df(args.sim_type, df, args.poli_affil)
+        save_agg_df(sim_file_path, agg_df)
+    else:
+        save_agg_df(sim_file_path, df)
+    
 
 
 if __name__ == '__main__':
-    sim_type = 'acrophily'
-    poli_affil = 'left'
-    sim_file_path = get_sim_file_path(sim_type, poli_affil)
-    df = merge_sim_files(sim_type, poli_affil)
-
-    if not sim_type == 'prob_diff':
-        agg_df = get_agg_df(sim_type, df, poli_affil)
-        save_agg_df(sim_file_path, agg_df)
-
-    else:
-        save_agg_df(sim_file_path, df)
+    main()
