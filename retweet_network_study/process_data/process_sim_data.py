@@ -23,23 +23,34 @@ def get_args(args=None):
     # Create command for political affiliation:
     parser.add_argument('-p', '--poli_affil', default="left",
                         help="Political affiliation subset you wish to run simulation on (left/right)")
+                        
+    # Create command for political affiliation:
+    parser.add_argument('-a', '--agg', default=False,
+                        help="Whether to aggregate individual level data (default = True)", type=bool)
 
     return parser.parse_args(args=args)
 
 
 # Get file path based on simulation:
-def get_sim_file_path(sim_type, poli_affil, data_folder_path):
+def get_sim_file_path(sim_type, poli_affil, data_folder_path, agg):
+    
     if sim_type == 'prob_diff':
         sim_file_name = f'user_coef_{poli_affil}.csv'
     else:
-        sim_file_name = f'{sim_type}_sim_{poli_affil}.csv'
-
+        if agg:
+            sim_file_name = f'{sim_type}_sim_{poli_affil}.csv'
+        else:
+            sim_file_name = f'{sim_type}_sim_{poli_affil}_indiv.csv'
+            
     sim_file_path = os.path.join(data_folder_path, sim_file_name)
 
     return sim_file_path
 
 
 def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path):
+
+    print(sim_file_path)
+
     if os.path.exists(sim_file_path):
         raise Exception("File already exists. Will not overwrite.")
 
@@ -62,10 +73,10 @@ def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path):
     return sim_data_files
 
 
-def merge_sim_files(sim_type, poli_affil, data_folder_path):
+def merge_sim_files(sim_type, poli_affil, data_folder_path, agg):
 
     # Get sim file path:
-    sim_file_path = get_sim_file_path(sim_type, poli_affil, data_folder_path)
+    sim_file_path = get_sim_file_path(sim_type, poli_affil, data_folder_path, agg)
 
     # Get sim data files:
     sim_data_files = get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path)
@@ -78,7 +89,10 @@ def merge_sim_files(sim_type, poli_affil, data_folder_path):
         current_df = pd.read_csv(file)
         df = pd.concat([df, current_df], axis=0, ignore_index=True)
 
-    print('Files merged. Processing dataframe.', flush=True)
+    if agg:
+        print('Files merged. Processing dataframe.', flush=True)
+    else:
+        print('Files merged. Saving to CSV.')
 
     return df
 
@@ -214,15 +228,19 @@ def save_agg_df(sim_file_path, agg_df):
 def main():
 
     args = get_args()
+    print(args.agg)
     
     assert args.sim_type in args.data_folder_path, 'Data Files Pathway and Simulation Specified Do Not Match.'
     
-    sim_file_path = get_sim_file_path(args.sim_type, args.poli_affil, args.data_folder_path)
-    df = merge_sim_files(args.sim_type, args.poli_affil, args.data_folder_path)
+    sim_file_path = get_sim_file_path(args.sim_type, args.poli_affil, args.data_folder_path, args.agg)
+    df = merge_sim_files(args.sim_type, args.poli_affil, args.data_folder_path, args.agg)
     
     if not args.sim_type == 'prob_diff':
-        agg_df = get_agg_df(args.sim_type, df, args.poli_affil)
-        save_agg_df(sim_file_path, agg_df)
+        if args.agg:
+            agg_df = get_agg_df(args.sim_type, df, args.poli_affil)
+            save_agg_df(sim_file_path, agg_df)
+        else:
+            save_agg_df(sim_file_path, df)
     else:
         save_agg_df(sim_file_path, df)
     
