@@ -1,0 +1,20 @@
+---
+title: "Merge Left and Right Individual Sim Data"
+output: html_document
+date: "2023-01-17"
+---
+
+```{r}
+d_acroph_left <- read.csv('../data/sim_data/acrophily/acrophily_sim_left_indiv.csv')
+d_acroph_right <- read.csv('../data/sim_data/acrophily/acrophily_sim_right_indiv.csv')
+d_acroph_indiv <- rbind(d_acroph_left, d_acroph_right)
+
+d_diff_left <- read.csv('../data/sim_data/mean_abs_diff/mean_abs_diff_sim_left_indiv.csv')
+d_diff_right <- read.csv('../data/sim_data/mean_abs_diff/mean_abs_diff_sim_right_indiv.csv')
+d_diff_indiv <- rbind(d_diff_left, d_diff_right)
+nrow(d_diff_indiv)
+
+write.csv(d_acroph_indiv, '../data/sim_data/acrophily/acrophily_sim_indiv.csv')
+write.csv(d_diff_indiv, '../data/sim_data/mean_abs_diff/mean_abs_diff_sim_indiv.csv')
+```
+
