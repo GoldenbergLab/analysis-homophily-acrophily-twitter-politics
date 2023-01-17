@@ -6,8 +6,7 @@ output: html_document
 
 ```{r}
 # Importing libraries:
-library(dplyr)
-library(tidyr)
+library (tidyverse)
 ```
 
 

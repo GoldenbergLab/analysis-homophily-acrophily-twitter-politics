@@ -1,0 +1,194 @@
+---
+title: "acrophily-twitter-SI"
+author: "Jonas Paul Schöne"
+date: "1/9/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r include = FALSE}
+
+# Library and Data
+library(sjPlot)
+library(lmtest)
+library(tidyverse)
+library(effects)
+library(lme4)
+library(ggplot2)
+library(extrafont)
+library(Hmisc)
+library(corrplot)
+
+theme_set(theme_bw())
+options(scipen = 999)
+
+cleanup = theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              axis.line = element_line(colour = "black"),
+              legend.key = element_rect(fill = "white"),
+              text = element_text(size = 15))
+
+df <-read.csv("acrophily_SI_twitter.csv")
+
+df <- df %>% 
+  select(-X) %>% 
+  mutate(ratio_sensitive_tweets = sensitive_tweets_count / tweets_count)
+
+df$poli_affil <- as.factor(df$poli_affil)
+```
+
+# Descriptives
+
+```{r}
+summary(df)
+```
+# Correlation Matrix
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+### remove attention check variables
+
+survey_correlations <- df %>% 
+  select(-poli_affil)
+
+survey_correlations_cor <- rcorr(as.matrix(na.omit(survey_correlations[ , ])))
+
+survey_correlations_cor$P <- ifelse(is.na(survey_correlations_cor$P) == TRUE, 1,survey_correlations_cor$P)
+
+corrplot(survey_correlations_cor$r, type="upper", order="hclust", 
+         p.mat = survey_correlations_cor$P, sig.level = .05, insig = "blank")
+  
+```
+
+
+# Sentiment
+
+```{r warning = FALSE }
+r1 = lm(coef ~  sentiment_average, df); tab_model(r1, digits = 5, digits.p = 3)
+
+lm_plot1 <- ggplot(data = df, aes(x = sentiment_average, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Average Emotion in Tweets (-1 to 1)")+
+  cleanup
+
+lm_plot1
+```
+
+# Retweet Sentiment
+
+```{r warning = FALSE}
+r2 = lm(coef ~  retweeted_sentiment_average, df); tab_model(r2, digits = 5, digits.p = 3)
+
+lm_plot2 <- ggplot(data = df, aes(x = retweeted_sentiment_average, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Average Emotion in Retweets (-1 to 1)")+
+  cleanup
+
+lm_plot2
+```
+
+# Total Number of Tweets
+
+```{r warning = FALSE}
+df_f <- df %>% 
+  mutate(sd_filter = scale(tweets_count)) %>% 
+  filter(abs(sd_filter) < 2)
+
+r2 = lm(coef ~  tweets_count, df_f); tab_model(r2, digits = 7, digits.p = 3)
+
+lm_plot2 <- ggplot(data = df_f, aes(x = tweets_count, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Total Number of Tweets")+
+  cleanup
+
+lm_plot2
+```
+
+# Total Number of Sensitive Tweets
+
+```{r warning = FALSE}
+df_f <- df %>% 
+  mutate(sd_filter = scale(ratio_sensitive_tweets)) %>% 
+  filter(abs(sd_filter) < 2)
+
+df_f$log_sensitive = log(df_f$ratio_sensitive_tweets+1)
+
+r2 = lm(coef ~  log_sensitive, df_f); tab_model(r2, digits = 7, digits.p = 3)
+
+lm_plot2 <- ggplot(data = df_f, aes(x = ratio_sensitive_tweets, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Ratio of Sensitive Tweets")+
+  cleanup
+
+lm_plot2
+```
+# Number of Followers
+
+```{r}
+df_f <- df %>% 
+  mutate(sd_filter = scale(followers_count)) %>% 
+  filter(abs(sd_filter) < 2)
+
+r3 = lm(coef ~  log(followers_count), df_f); tab_model(r3, digits = 7, digits.p = 3)
+
+lm_plot3 <- ggplot(data = df_f, aes(x = followers_count, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Number of Followers")+
+  cleanup
+
+lm_plot3
+```
+
+# Number of Followings
+
+```{r}
+df_f <- df %>% 
+  mutate(sd_filter = scale(following_count)) %>% 
+  filter(abs(sd_filter) < 2)
+
+r3 = lm(coef ~  following_count, df_f); tab_model(r3, digits = 7, digits.p = 3)
+
+lm_plot3 <- ggplot(data = df_f, aes(x = following_count, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Number of Followings")+
+  cleanup
+
+lm_plot3
+```
+
+# Average Number of Mentions
+
+```{r warning = FALSE}
+df_f <- df %>% 
+  mutate(sd_filter = scale(mentions_average)) %>% 
+  filter(abs(sd_filter) < 2)
+
+r3 = lm(coef ~  mentions_average, df_f); tab_model(r3, digits = 7, digits.p = 3)
+
+lm_plot3 <- ggplot(data = df_f, aes(x = mentions_average, y = coef))+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_smooth(method=lm,size = 1)+
+  geom_point()+
+  labs(y = "Acrophily Coefficient", colour = "                ", x = "Average Number of Mentions")+
+  cleanup
+
+lm_plot3
+```

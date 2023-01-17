@@ -30,13 +30,13 @@ left_right_plot <- d %>%
         axis.title.x = element_text( vjust=0.5, size=18)) +
   facet_wrap(~is_moderate, labeller=as_labeller(label_names), ncol=1)+
   scale_color_manual(labels = c("Liberal", "Conservative"), values = c("blue", "red"))+
-  labs(x = "Perceived Copartisanship", y = "Like Tweet", color = "Political Affiliation")+
+  labs(x = "Perceived Co-partisanship", y = "Like Tweet", color = "Political Affiliation")+
    annotate("text", x=0.15, y=1.2, label= "Moderate") + 
   annotate("text", x=2.93, y=1.2, label= "Extreme") + 
   theme_bw();left_right_plot
 
 
-#ggsave('figures/avg_sentiment_avg_perceived.jpg')
+ggsave('../figures/avg_sentiment_avg_perceived.jpg', dpi = 300, width = 7, height= 5)
 
 left_right_plot
 

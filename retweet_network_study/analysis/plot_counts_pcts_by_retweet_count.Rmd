@@ -26,14 +26,26 @@ addline_format <- function(x,...){
     gsub('\\s','\n',x)
 }
 
+#d$rt = as.numeric(d$rt)
+
 d %>% 
-  ggplot(aes(x=rt, y=count, vjust=-0.2)) +
+  ggplot(aes(x=rt, y=count, vjust=-0.2, fill = rt)) +
   geom_bar(stat='identity') +
-  geom_text(aes(label=addline_format(count_pct)), size=2.2) +
-  labs(x='Retweet Count', y='Observation Count', 
+  geom_text(aes(label=addline_format(count_pct)), size=4) +
+  labs(x='Retweet Count', y='Count', 
        title='Number of Observations in Dataset by Retweet Count') +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+  #scale_y_continuous(limits=c(0, 60000))+
+  scale_y_continuous(expand = c(0.18, 0))+
+  #scale_x_continuous(limits=c(0, 10)) +
+  #expand_limits(-10, 70000)+
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 16),
+        legend.position = ('none'),
+        axis.title.y = element_text(face="bold",  size=14),
+        axis.text.x  = element_text( vjust=0.5, size=12),
+        axis.text.y  = element_text( vjust=0.5, size=12),
+        axis.title.x = element_text( vjust=0.5, size=14),
+        strip.text = element_text(size = 14))
 
 ggsave('../figures/observations_by_retweet_count.jpg', width = 9, height = 6)
 ```
