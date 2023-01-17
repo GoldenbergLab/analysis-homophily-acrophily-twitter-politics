@@ -1,0 +1,23 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+
+dh = read_csv ('../data/mean_abs_diff_sim_indiv.csv')
+
+da = read_csv ('../data/acrophily_sim_indiv.csv')
+```
+
+
+
+```{r descriptives}
+
+dh_des = dh %>% 
+  group_by (userid) %>% 
+  slice(1)
+
+```
+

@@ -29,7 +29,7 @@ d_rt <- read.csv('../data/rt_data_processed.csv')
 # Distribution of user political ratings:
 ```{r}
 
-yrng <- range(d_rt$orig_rating_ego)
+d
 d_rt %>% 
   mutate(poli_affil = ifelse(poli_affil == 'right', 'Conservatives', 'Liberals')) %>%
   ggplot(aes(x=orig_rating_ego,  color=poli_affil)) +
