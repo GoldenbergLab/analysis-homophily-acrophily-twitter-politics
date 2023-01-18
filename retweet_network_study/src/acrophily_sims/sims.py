@@ -430,7 +430,7 @@ class AcrophilySim(TwitterDataProcessor):
             self.agg_sim_df.to_csv(file_path, index=False)
         else:
             # Save sim df to aggregate later if using only fraction of data:
-            self.sim_df = self.sim_df[['threshold', 'orig_rating_ego', 'orig_rating_peer',
+            self.sim_df = self.sim_df[['userid', 'threshold', 'orig_rating_ego', 'orig_rating_peer',
                                        'homoph_rating_peer', 'acroph_rating_peer_min', 'acroph_rating_peer_max']]
             self.sim_df.to_csv(file_path, index=False)
 
@@ -529,6 +529,9 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         # Append absolute difference between peer and ego ratings in both conditions:
         self.abs_diff_df['abs_diff_empi'] = np.abs(ego_ratings - peer_ratings_empi)
         self.abs_diff_df['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
+        
+        # Append random peer ratings to column:
+        self.abs_diff_df['random_raing_peer'] = peer_ratings_random
 
     # Run simulation within single threshold and append results to dataframe:
     def run_threshold_sim(self, n=1000):
@@ -560,7 +563,11 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
         # Take the aggregate of the threshold df after 100 trials, grouped by ego:
         self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False) \
-            .agg(mean_abs_diff_empi=('abs_diff_empi', 'mean'),
+            .agg(userid=('userid', pd.Series.mode),
+                orig_rating_ego=('orig_rating_ego', 'mean'),
+                orig_rating_peer=('orig_rating_peer', 'mean'),
+                random_rating_peer=('random_rating_peer', 'mean'),
+                mean_abs_diff_empi=('abs_diff_empi', 'mean'),
                  mean_abs_diff_random=('abs_diff_random', 'mean'),
                  threshold=('rt', 'mean'))
 
@@ -603,9 +610,12 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         print('Simulation complete. Taking average results by threshold.', flush=True)
 
         # Group sim df by threshold and get average results across all users:
-        self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg(
-            mean_abs_diff_empi=('mean_abs_diff_empi', 'mean'),
-            mean_abs_diff_random=('mean_abs_diff_random', 'mean'))
+        self.agg_sim_df = self.sim_df.groupby('threshold', as_index=False).agg(userid=('userid', pd.Series.mode),
+                orig_rating_ego=('orig_rating_ego', 'mean'),
+                orig_rating_peer=('orig_rating_peer', 'mean'),
+                random_rating_peer=('random_rating_peer', 'mean'),
+                mean_abs_diff_empi=('abs_diff_empi', 'mean'),
+                 mean_abs_diff_random=('abs_diff_random', 'mean'))
 
         # Append confidence intervals per threshold for each condition:
         self.agg_sim_df['confint_empi'] = self.confints_empi
