@@ -531,7 +531,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
         self.abs_diff_df['abs_diff_random'] = np.abs(ego_ratings - peer_ratings_random)
         
         # Append random peer ratings to column:
-        self.abs_diff_df['random_raing_peer'] = peer_ratings_random
+        self.abs_diff_df['random_rating_peer'] = peer_ratings_random
 
     # Run simulation within single threshold and append results to dataframe:
     def run_threshold_sim(self, n=1000):
