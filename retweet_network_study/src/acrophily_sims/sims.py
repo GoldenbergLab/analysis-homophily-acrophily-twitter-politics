@@ -563,8 +563,7 @@ class MeanAbsDiffSim(TwitterDataProcessor):
 
         # Take the aggregate of the threshold df after 100 trials, grouped by ego:
         self.agg_threshold_df = self.threshold_sim_df.groupby('userid', as_index=False) \
-            .agg(userid=('userid', pd.Series.mode),
-                orig_rating_ego=('orig_rating_ego', 'mean'),
+            .agg(orig_rating_ego=('orig_rating_ego', 'mean'),
                 orig_rating_peer=('orig_rating_peer', 'mean'),
                 random_rating_peer=('random_rating_peer', 'mean'),
                 mean_abs_diff_empi=('abs_diff_empi', 'mean'),
