@@ -57,7 +57,7 @@ def get_data_files(sim_type, poli_affil, sim_file_path, data_folder_path):
     if not sim_type == 'prob_diff':
         files = os.listdir(data_folder_path)
         sim_data_files = [os.path.join(data_folder_path, file) for file in files
-                          if file.startswith(f'{sim_type}_sim_{poli_affil}_')]
+                          if file.startswith(f'{sim_type}_sim_{poli_affil}_') and 'indiv' not in file]
 
         print(f'{len(sim_data_files)} files found for sim type {sim_type}. Merging files.',
               flush=True)
@@ -200,6 +200,8 @@ def get_confint_cols(sim_type, df, agg_df):
 
 def get_agg_df(sim_type, df, poli_affil):
 
+    df = df.copy()
+    df = df.drop(['userid'], axis=1)
     agg_df = df.groupby('threshold', as_index=False).agg('mean')
 
     if sim_type == 'acrophily':
