@@ -4,20 +4,222 @@ output: html_notebook
 ---
 
 ```{r}
+
+options(scipen = 999)
+
 library(tidyverse)
+library(lme4)
+library (lmerTest);
+library(Rmisc)
 
-dh = read_csv ('../data/mean_abs_diff_sim_indiv.csv')
+dh = read_csv ('../data/mean_abs_diff_sim_indiv.csv') %>% 
+  select(-...1) %>% 
+  select(id=userid, 
+         threshold,
+         poli=poli_affil,
+         abs_dif_empirical=mean_abs_diff_empi,
+         abs_dif_random=mean_abs_diff_random) %>% 
+  gather(homoph_condition, sim_abs_value, -id, -threshold,-poli) %>% 
+  filter(threshold<=5)
 
-da = read_csv ('../data/acrophily_sim_indiv.csv')
+da = read_csv ('../data/acrophily_sim_indiv_1_17_23.csv') %>% 
+  select(id=userid,
+         threshold,
+         poli=poli_affil,
+         ego_empirical = orig_rating_ego, 
+         peer_empirical =orig_rating_peer,
+         peer_homoph= homoph_rating_peer,
+         peer_acroph= acroph_rating_peer_min,
+         peer_comp_acroph = acroph_rating_peer_max) %>% 
+  gather(acroph_condition, sim_value, -id, -threshold,-poli, -ego_empirical) %>% 
+    filter(threshold<=5)
+
+da$dif = da$sim_value-da$ego_empirical
+da$more_extreme = ifelse(da$dif <=0,0,1)
+
+a <- da[rowSums(is.na(da)) > 0,]
+
+
+head(dh)
+head(da)
+
+d = left_join(da,dh, by = c("userid","threshold", "poli_affil"))
+
+a <- d[rowSums(is.na(d)) > 0,]
+
+rsquare = function (reg){
+  1-var(residuals(reg))/(var(model.response(model.frame(reg))))
+}
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
 ```
 
 
 
 ```{r descriptives}
 
-dh_des = dh %>% 
+des = d %>% 
   group_by (userid) %>% 
   slice(1)
 
+a <- des[rowSums(is.na(des)) > 0,]
+
+
+dh_des = dh %>% 
+  group_by (id) %>% 
+  slice(1) %>% 
+  drop_na(userid)
+
+da_des = da %>% 
+  group_by (id) %>% 
+  slice(1) %>% 
+  drop_na(userid)
+
+des = left_join(da_des,dh_des, by = c("userid","threshold", "poli_affil"))
+
+
+a=des[duplicated(des$userid),]
+
+
+a=des[duplicated(des$mean_abs_diff_empi),]
+
+```
+
+
+```{r politial affiliation }
+
+
+da_des %>% 
+  mutate(poli_affil = ifelse(poli_affil == 'right', 'Conservatives', 'Liberals')) %>%
+  ggplot(aes(x=orig_rating_ego,  color=poli_affil)) +
+  geom_histogram(fill='transparent') +
+  facet_wrap(~poli_affil) +
+   annotate("text", x=0.22, y = -1000, label= "Moderate") + 
+  annotate("text", x=1.82, y=-1000, label= "Extreme") + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face="bold", size = 16),
+        legend.position = ('none'),
+        axis.title.y = element_text(face="bold",  size=14),
+        axis.text.x  = element_text( vjust=0.5, size=12),
+        axis.text.y  = element_text( vjust=0.5, size=12),
+        axis.title.x = element_text( vjust=0.5, size=14),
+        strip.text = element_text(size = 14))+
+    labs(x='', y='Count',
+       title='Users Political Affiliation', color = '')
+
+
+ggsave('../figures/user_poli_ratings.jpg', width = 9, height = 6)
+
+```
+
+
+
+```{r homophily}
+dh$homoph_condition = factor(dh$homoph_condition)
+dh$homoph_condition_effect = ifelse (dh$homoph_condition=="abs_dif_empirical", -1,1)
+dh$poli=factor(dh$poli)
+dh$poli_effect = ifelse (dh$poli=="left" , -1,1)
+r = lmer (sim_abs_value ~homoph_condition_effect * 
+            scale(threshold)*
+            poli_effect+(1|id) , dh);summary(r)
+
+
+
+
+confint(r)
+
+rsquare(r)
+
+
+label_names <- c('right' = 'Conservatives', 'left' = 'Liberals')
+
+
+dfc <- summarySE(dh, measurevar="sim_abs_value", groupvars=c("homoph_condition", "threshold", "poli"), na.rm = T)
+
+ggplot(dfc,aes(x=threshold, y=sim_abs_value ,fill = homoph_condition, colour =homoph_condition))+
+    geom_errorbar(aes(ymin=sim_abs_value-ci, ymax=sim_abs_value+ci), width=.1)+
+    geom_line( aes(linetype= homoph_condition, group=homoph_condition),size = .5)+
+    geom_point()+
+    theme_bw()+
+    theme(plot.title = element_text(hjust=0.5,size = rel(1.5)),
+          axis.title.y = element_text(face="bold",  size=14),
+          axis.text.x  = element_text( vjust=0.5, size=18),
+          axis.text.y  = element_text( vjust=0.5, size=12),
+          axis.title.x = element_text( vjust=0.5, size=18)) +
+    facet_wrap(~poli, labeller=as_labeller(label_names), ncol = 1)+
+
+    labs(title = "title",
+          x = "xtitle", 
+          y = "ytitle")
+
+
+
+
+
+abs_diff_plot <- dh %>%
+  ggplot(aes(x=threshold, y=sim_abs_value, group=sim_abs_value, color=homoph_condition)) +
+  geom_smooth(method = "lm")+
+  facet_wrap(~poli, labeller=as_labeller(label_names), ncol = 1)+
+  #geom_line()+
+  #geom_errorbar(aes(ymin=ci_lower, ymax=ci_upper, color=sim_condition), alpha=0.2)+
+  scale_color_manual(labels = c("Empirical", "Random"), values = c("orange", "blue"))+
+  labs(x='Retweet Number', y="Mean Absolute Difference", color="Simulation Condition")+
+  theme_bw();abs_diff_plot
+
+
+ggsave('../figures/abs_diff_plot.jpg', width=8, height=7)
+
+abs_diff_plot
+
+```
+
+```{r}
+da$acroph_condition=factor(da$acroph_condition)
+da$acroph_condition= relevel (da$acroph_condition, "peer_empirical")
+da$acroph_condition_effect = ifelse (da$acroph_condition=="peer_empirical", -1,1)
+da$poli=factor(da$poli)
+da$poli_effect = ifelse (da$poli=="left" , -1,1)
+da$id = factor(da$id)
+
+r = glmer (more_extreme ~acroph_condition * 
+            scale(threshold)*
+            poli_effect+(1|id) , family = "binomial", da);summary(r)
+
+rl = glmer (more_extreme ~acroph_condition * 
+            scale(threshold)+(1|id) , family = "binomial", filter(da, poli=="left"));summary(rl)
+
+cc <- confint(rl,parm="theta_")  ## slow (~ 11 seconds)
+
+a=confint(rl, level =.95)
+
+a
+rr = glmer (more_extreme ~acroph_condition * 
+            scale(threshold)+(1|id) , family = "binomial", filter(da, poli=="right"));summary(rr)
+b=confint(rr, level =.95)
+
+
+r = glmer (more_extreme ~acroph_condition * scale(threshold)+(1|id) , 
+          filter(da, poli == "left"), family = "binomial");summary(r)
+
+
+abs_diff_plot <- da %>%
+  ggplot(aes(x=threshold, y=more_extreme, group=acroph_condition, color=acroph_condition)) +
+  geom_smooth(method = "loess", se = F)+
+  facet_wrap(~poli, labeller=as_labeller(label_names), ncol = 1)+
+  #geom_line()+
+  #geom_errorbar(aes(ymin=ci_lower, ymax=ci_upper, color=sim_condition), alpha=0.2)+
+  #scale_color_manual(labels = c("Empirical", "Random"), values = c("orange", "blue"))+
+  labs(x='Retweet Number', y="Mean Absolute Difference", color="Simulation Condition")+
+  theme_bw();abs_diff_plot
+
+```
+```{r}
+
+fixef(rl)
+logit2prob(fixef(rl))
 ```
 
