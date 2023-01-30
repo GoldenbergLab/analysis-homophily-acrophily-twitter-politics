@@ -26,7 +26,7 @@ def get_args(args=None):
                         
     # Create command for political affiliation:
     parser.add_argument('-a', '--agg', default=False,
-                        help="Whether to aggregate individual level data (default = True)", type=bool)
+                        help="Whether to aggregate individual level data (default = False)", type=bool)
 
     return parser.parse_args(args=args)
 
@@ -210,7 +210,6 @@ def get_agg_df(sim_type, df, poli_affil):
 
     if sim_type == 'mean_abs_diff':
         agg_df = get_confint_cols(sim_type=sim_type, df=df, agg_df=agg_df)
-        agg_df.drop(['userid'], axis=1, inplace=True)
 
     agg_df['poli_affil'] = np.repeat(poli_affil, len(agg_df))
 
