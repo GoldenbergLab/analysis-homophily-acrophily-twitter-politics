@@ -69,8 +69,6 @@ def load_data(data_path, poli_affil=None):
     # Create dummy variable indicating whether peer is more extreme:
     df['more_extreme'] = np.where(df['peer_rating'] > df['orig_rating_ego'],
                                  1, 0)
-    
-    df = df.sample(frac=0.001)
         
     # Factorize user ID to create index for each user:
     df['userid_idx'] = pd.factorize(df['userid'])[0]
@@ -143,7 +141,7 @@ def run_model(df):
         obs = pm.Bernoulli('obs', p=p, observed=df['more_extreme'])
 
         # Get trace to analyze results:
-        trace = pm.sample(5000, tune=5000, target_accept=0.99)
+        trace = pm.sample(20000, tune=20000, target_accept=0.99)
         
     return trace
 
@@ -152,7 +150,7 @@ def run_model(df):
 def save_trace_plot(trace, file_name, fig_path='figures'):
     
     az.plot_trace(trace, var_names=['homoph', 'acroph_min', 'acroph_max', 'thresh'],
-                 compact=True)
+                 compact=True, figsize=(16, 14))
     plt.savefig(os.path.join(fig_path, file_name))
     
 
@@ -162,7 +160,7 @@ def save_summary_df(trace, data_path, file_name):
     file_path = os.path.join(data_path, file_name)
     
     df = az.summary(trace, var_names=['homoph', 'acroph_min', 'acroph_max', 'thresh'])
-    df.to_csv(os.path.join(data_path, file_name), index=False)
+    df.to_csv(os.path.join(data_path, file_name))
     
 
 # Main function to load data, run model and save results:
