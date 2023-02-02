@@ -15,6 +15,7 @@ torch = "*"
 python-dotenv = "*"
 seaborn = "*"
 matplotlib = "*"
+pymc3 = "*"
 
 [dev-packages]
 

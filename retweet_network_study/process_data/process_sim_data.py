@@ -229,7 +229,6 @@ def save_agg_df(sim_file_path, agg_df):
 def main():
 
     args = get_args()
-    print(args.agg)
     
     assert args.sim_type in args.data_folder_path, 'Data Files Pathway and Simulation Specified Do Not Match.'
     
