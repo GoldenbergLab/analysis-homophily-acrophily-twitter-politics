@@ -109,7 +109,6 @@ def run_model(df):
         homoph = df['homophily']
         acroph_min = df['acrophily_min']
         acroph_max = df['acrophily_max']
-        thresh = df['threshold']
 
         # Indexes for varying intercepts for each user within each threshold:
         user_idx = pm.Data("user_idx", df['userid_idx'], dims="obs_id")
@@ -126,22 +125,20 @@ def run_model(df):
         intercepts = alpha[user_idx, thresh_idx]
 
         # Generate coefficients with uniform prior within -1 and 1:
-        b_homoph = pm.Uniform('homoph', lower=-1, upper=1)
-        b_acroph_min = pm.Uniform('acroph_min', lower=-1, upper=1)
-        b_acroph_max = pm.Uniform('acroph_max', lower=-1, upper=1)
-        b_thresh = pm.Uniform('thresh', lower=-1, upper=1)
+        b_homoph = pm.Uniform('homoph', lower=-100, upper=100)
+        b_acroph_min = pm.Uniform('acroph_min', lower=-100, upper=100)
+        b_acroph_max = pm.Uniform('acroph_max', lower=-100, upper=100)
 
         # Run logistic regression model with sigmoid activation function:
         p = pm.Deterministic('p', pm.math.sigmoid(intercepts + b_homoph*homoph + \
                                                   b_acroph_min*acroph_min + \
-                                                  b_acroph_max*acroph_max) + \
-                                                  b_thresh*thresh)
+                                                  b_acroph_max*acroph_max))
 
         # Generate observations using model and actual outcomes:
         obs = pm.Bernoulli('obs', p=p, observed=df['more_extreme'])
 
         # Get trace to analyze results:
-        trace = pm.sample(20000, tune=20000, target_accept=0.99)
+        trace = pm.sample(10000, tune=10000, target_accept=0.95)
         
     return trace
 
@@ -149,7 +146,7 @@ def run_model(df):
 # Save trace plot:
 def save_trace_plot(trace, file_name, fig_path='figures'):
     
-    az.plot_trace(trace, var_names=['homoph', 'acroph_min', 'acroph_max', 'thresh'],
+    az.plot_trace(trace, var_names=['homoph', 'acroph_min', 'acroph_max'],
                  compact=True, figsize=(16, 14))
     plt.savefig(os.path.join(fig_path, file_name))
     
@@ -159,7 +156,7 @@ def save_summary_df(trace, data_path, file_name):
     
     file_path = os.path.join(data_path, file_name)
     
-    df = az.summary(trace, var_names=['homoph', 'acroph_min', 'acroph_max', 'thresh'])
+    df = az.summary(trace, var_names=['homoph', 'acroph_min', 'acroph_max'])
     df.to_csv(os.path.join(data_path, file_name))
     
 
