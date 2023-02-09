@@ -138,7 +138,7 @@ def run_model(df):
         obs = pm.Bernoulli('obs', p=p, observed=df['more_extreme'])
 
         # Get trace to analyze results:
-        trace = pm.sample(10000, tune=10000, target_accept=0.95)
+        trace = pm.sample(10000, tune=10000, target_accept=0.99)
         
     return trace
 
