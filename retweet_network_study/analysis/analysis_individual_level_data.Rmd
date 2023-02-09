@@ -11,6 +11,7 @@ library(tidyverse)
 library(lme4)
 library (lmerTest);
 library(Rmisc)
+library(MuMIn)
 
 #we have 66787 uniqu users 
 dh = read_csv ('../data/mean_abs_diff_sim_indiv.csv') %>% 
@@ -23,7 +24,7 @@ dh = read_csv ('../data/mean_abs_diff_sim_indiv.csv') %>%
   gather(homoph_condition, sim_abs_value, -id, -threshold,-poli) %>% 
   filter(threshold<=5)
 
-da = read_csv ('../data/acrophily_sim_indiv_1_17_23.csv') %>% 
+da = read_csv ('../data/acrophily_sim_indiv.csv') %>% 
   select(id=userid,
          threshold,
          poli=poli_affil,
@@ -38,11 +39,16 @@ da = read_csv ('../data/acrophily_sim_indiv_1_17_23.csv') %>%
 da$dif = da$sim_value-da$ego_empirical
 da$more_extreme = ifelse(da$dif <=0,0,1)
 
-a <- da[rowSums(is.na(da)) > 0,]
+mean(da$more_extreme)
+
+dfc <- summarySE(da, measurevar="more_extreme", groupvars=c("acroph_condition","poli"), na.rm = T)
+
 
 
 head(dh)
 head(da)
+
+sum(da$threshold)
 
 
 #function
@@ -61,25 +67,35 @@ logit2prob <- function(logit){
 
 ```{r descriptives}
 
+numbers = read_csv ('../data/acrophily_sim_indiv.csv') 
+
+table(numbers$poli_affil)
+
+des = numbers %>% 
+  filter(threshold <6) %>% 
+  group_by (userid) %>% 
+  slice(1) %>% 
+  drop_na(userid)
+
+table(des$poli_affil)
+
+total = numbers %>% 
+  group_by (poli_affil) %>% 
+  dplyr::summarise(total= sum(threshold))
 
 
-a <- dh[rowSums(is.na(dh)) > 0,]
 
 
 dh_des = dh %>% 
   group_by (id) %>% 
-  slice(1) %>% 
-  drop_na(id)
-
-da_des = da %>% 
-  group_by (id) %>% 
-  slice(1) %>% 
-  drop_na(userid)
-
-des = left_join(da_des,dh_des, by = c("userid","threshold", "poli_affil"))
+  slice(1) #%>% 
+  #drop_na(id)
 
 
-a=dh_des[duplicated(dh_des$id),]
+
+
+
+
 
 
 
@@ -90,8 +106,8 @@ a=dh_des[duplicated(dh_des$id),]
 
 
 da_des %>% 
-  mutate(poli_affil = ifelse(poli_affil == 'right', 'Conservatives', 'Liberals')) %>%
-  ggplot(aes(x=orig_rating_ego,  color=poli_affil)) +
+  mutate(poli_affil = ifelse(poli == 'right', 'Conservatives', 'Liberals')) %>%
+  ggplot(aes(x=ego_empirical,  color=poli)) +
   geom_histogram(fill='transparent') +
   facet_wrap(~poli_affil) +
    annotate("text", x=0.22, y = -1000, label= "Moderate") + 
@@ -119,17 +135,17 @@ dh$homoph_condition = factor(dh$homoph_condition)
 dh$homoph_condition_effect = ifelse (dh$homoph_condition=="abs_dif_empirical", -1,1)
 dh$poli=factor(dh$poli)
 dh$poli_effect = ifelse (dh$poli=="left" , -1,1)
-r = lmer (sim_abs_value ~homoph_condition_effect * 
+rh = lmer (sim_abs_value ~homoph_condition_effect *
             scale(threshold)*
-            poli_effect+(1|id) , dh);summary(r)
+            poli_effect+
+              (1|id), dh);summary(rh)
 
 
 
 
-confint(r)
+crh = confint(rh)
 
-rsquare(r)
-
+r.squaredGLMM(rh)
 
 label_names <- c('right' = 'Conservatives', 'left' = 'Liberals')
 
@@ -172,6 +188,9 @@ ggsave('../figures/abs_diff_plot.jpg', width=8, height=7)
 abs_diff_plot
 
 ```
+```{r}
+crh
+```
 
 ```{r}
 da$acroph_condition=factor(da$acroph_condition)
@@ -182,22 +201,57 @@ da$poli_effect = ifelse (da$poli=="left" , -1,1)
 da$id = factor(da$id)
 
 
-rl = glmer (more_extreme ~acroph_condition * 
-            scale(threshold)+(1|id) , family = "binomial", 
-            filter(da, poli=="left"));summary(rl)
 
-cc <- confint(rl,parm="theta_")  ## slow (~ 11 seconds)
-
-a=confint(rl, level =.95)
-
-a
-rr = glmer (more_extreme ~acroph_condition * 
-            scale(threshold)+(1|id) , family = "binomial", filter(da, poli=="right"));summary(rr)
-b=confint(rr, level =.95)
+rl = glmer (more_extreme ~acroph_condition + scale(threshold)+
+              (1|threshold:id)+
+              (1|id) , family = "binomial", 
+            data=filter(da, poli=="left"),
+            glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000))) ;summary(rl)
 
 
-r = glmer (more_extreme ~acroph_condition * scale(threshold)+(1|id) , 
-          filter(da, poli == "left"), family = "binomial");summary(r)
+rll = lmer (more_extreme ~acroph_condition + scale(threshold)+
+              (1|threshold:id)+
+              (1|id) , 
+            data=filter(da, poli=="left")) ;summary(rll)
+
+confint (rll)
+r.squaredGLMM(rll)
+
+#calcualte precent
+c_rl = fixef(rl)
+logit2prob(c_rl[1]) #intercept
+logit2prob(c_rl[1]+c_rl[4]) # homophily
+logit2prob(c_rl[1]+c_rl[2]) # acrophily
+logit2prob(c_rl[1]+c_rl[3]) # complete acrophily
+
+
+##conservatives 
+rr = glmer (more_extreme ~acroph_condition + scale(threshold)+
+              (1|threshold:id)+
+              (1|id) , family = "binomial", 
+            data=filter(da, poli=="right"),
+            glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000))) ;summary(rr)
+
+
+confint.merMod(rr,method="Wald")
+           
+rrl = lmer (more_extreme ~acroph_condition + scale(threshold)+
+              (1|threshold:id)+
+              (1|id) , 
+            data=filter(da, poli=="right")) ;summary(rrl)
+
+crrl = confint(rrl)
+r.squaredGLMM(rll)
+
+
+c_rr = fixef(rr)
+logit2prob(c_rr[1]) #intercept
+logit2prob(c_rl[1]+c_rl[4]) # homophily
+logit2prob(c_rl[1]+c_rl[2]) # acrophily
+logit2prob(c_rl[1]+c_rl[3]) # complete acrophily
+
+
+dfc <- summarySE(da, measurevar="more_extreme", groupvars=c("acroph_condition", "poli"), na.rm = T)
 
 
 abs_diff_plot <- da %>%
@@ -211,6 +265,93 @@ abs_diff_plot <- da %>%
   theme_bw();abs_diff_plot
 
 ```
+```{r}
+crrl
+```
+
+```{r}
+
+
+
+dfc <- summarySE(da, measurevar="more_extreme", groupvars=c("acroph_condition", "threshold", "poli"), na.rm = T)
+
+
+ggplot(dfc,aes(x=threshold, y=more_extreme ,fill = acroph_condition, colour =acroph_condition))+
+    geom_errorbar(aes(ymin=more_extreme-ci, ymax=more_extreme+ci), width=.1)+
+    geom_line( aes(linetype= acroph_condition, group=acroph_condition),size = .5)+
+    geom_point()+
+    theme_bw()+
+    theme(plot.title = element_text(hjust=0.5,size = rel(1.5)),
+          axis.title.y = element_text(face="bold",  size=14),
+          axis.text.x  = element_text( vjust=0.5, size=18),
+          axis.text.y  = element_text( vjust=0.5, size=12),
+          axis.title.x = element_text( vjust=0.5, size=18)) +
+    facet_wrap(~poli, ncol = 1)+
+    labs(title = "title",
+          x = "xtitle", 
+          y = "ytitle")
+
+```
+
+```{r}
+
+
+dfc <- summarySE(da, measurevar="more_extreme", groupvars=c("acroph_condition", "threshold", "poli"), na.rm = T) 
+
+dfc$acroph_condition=recode_factor(dfc$acroph_condition, 
+                                   peer_empirical="Empirical",
+                                   peer_acroph = "Acrophily",
+                                   peer_comp_acroph ="Complete Acrophily",
+                                   peer_homoph = "Homophily"
+                                   )
+
+dfc$poli=recode_factor(dfc$poli,left="Liberals",
+                       right = "Conservatives"
+                                   )
+
+
+ggplot(dfc,aes(x=threshold, y=more_extreme , fill =acroph_condition, colour=acroph_condition))+
+    geom_errorbar(aes(ymin=more_extreme-ci, ymax=more_extreme+ci), width=.5, alpha =.3)+
+    scale_color_manual( values = c("black", "orange", "red", "blue"))+
+    #scale_fill_discrete(labels=c("Empirical", "Acrophily", "Complete Acrophily", "Homophily"))+
+    #scale_color_discrete(breaks = "acroph_condition")+
+    geom_line( aes(linetype= acroph_condition, group=acroph_condition),size = .5)+
+    geom_point()+
+    theme_bw()+
+    theme(strip.text.x = element_text(size = 14),
+          legend.title=element_blank(),
+          plot.title = element_text(hjust=0.5,size = rel(1.5)),
+          axis.title.y = element_text(face="bold",  size=14),
+          axis.text.x  = element_text( vjust=0.5, size=14),
+          axis.text.y  = element_text( vjust=0.5, size=12),
+          axis.title.x = element_text( vjust=0.5, size=14)) +
+    facet_wrap(~poli, ncol = 2)+
+    labs(
+          title = "",
+          x = "Retweet Number", 
+          y = "P(more extreme)")
+
+
+
+ggsave('../figures/acrophily_sim_plot.jpg', width = 8, height = 7)
+
+
+
+
+dfc <- summarySE(da, measurevar="more_extreme", groupvars=c("acroph_condition",  "poli"), na.rm = T)
+
+```
+
+```{r blmer}
+
+
+test = da %>%   sample_n(50000)
+
+
+rl_test = blmer (more_extreme ~acroph_condition+(1|id) , family = "binomial", filter(test, poli=="left"));summary(rl)
+
+```
+
 ```{r}
 
 fixef(rl)

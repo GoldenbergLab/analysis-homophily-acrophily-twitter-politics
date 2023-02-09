@@ -36,19 +36,36 @@ cleanup = theme(panel.grid.major = element_blank(),
               legend.key = element_rect(fill = "white"),
               text = element_text(size = 15))
 
-df <-read.csv("acrophily_SI_twitter.csv")
-indiv <-read.csv("acrophily_sim_indiv_1_17_23.csv")
-
-df <- df %>% 
-  dplyr::select(-X) %>% 
+df <-read.csv("acrophily_indiv_twitter_data.csv") %>% 
+  dplyr::rename (poli = poli_affil) %>% 
   mutate(ratio_sensitive_tweets = sensitive_tweets_count / tweets_count)
 
-df$poli_affil <- as.factor(df$poli_affil)
+
+indiv <-read.csv("acrophily_sim_indiv.csv")%>% 
+  filter(threshold <6) %>% 
+  select(user_id=userid,orig_rating_ego, threshold,orig_rating_peer , homoph_rating_peer, poli=poli_affil )%>%
+  mutate(difhomo = orig_rating_peer-homoph_rating_peer,
+         difself = orig_rating_peer-orig_rating_ego) %>% 
+  group_by(user_id) %>% 
+  dplyr::summarize (meanDifHomo = mean (difhomo),
+                    poli =first(poli),
+                    political_affiliation =first(orig_rating_ego))
+  
+
+df = left_join(df, indiv , by = c("user_id", "poli")) %>% 
+  dplyr::rename(acro_coef = meanDifHomo)
+  
+
+df$poli <- as.factor(df$poli)
 df$followers_log <- log(df$followers_count+1)
 df$following_log <- log(df$following_count+1)
 df$retweets_average_log <- log(df$retweets_average +1)
 df$tweets_log <- log(df$tweets_count+1)
 df$mentions_average_log <- log(df$mentions_average+1)
+
+
+
+
 ```
 
 # Descriptives
@@ -63,7 +80,7 @@ plot(density(df$following_log))
 plot(density(df$tweets_log))
 plot(density(df$ratio_sensitive_tweets))
 plot(density(df$mentions_average_log))
-plot(density(df$poli_rating, na.rm = TRUE))
+plot(density(df$political_affiliation, na.rm = TRUE))
 ```
 # Correlation Matrix
 
@@ -72,9 +89,11 @@ plot(density(df$poli_rating, na.rm = TRUE))
 ### remove attention check variables
 
 survey_correlations <- df %>% 
-  dplyr::select(-poli_affil, -followers_count, -following_count, -tweets_count, -mentions_average)
+  dplyr::select(-poli, -followers_count, -following_count, -tweets_count, -mentions_average)
 
 survey_correlations_cor <- rcorr(as.matrix(na.omit(survey_correlations[ , ])))
+
+cor_table = as.data.frame(survey_correlations_cor[["r"]])
 
 survey_correlations_cor$P <- ifelse(is.na(survey_correlations_cor$P) == TRUE, 1,survey_correlations_cor$P)
 
@@ -86,13 +105,13 @@ corrplot(survey_correlations_cor$r, type="upper", order="hclust",
 # Political Affiliation Strength
 
 ```{r}
-r0 = lm(user_coef ~  poli_rating, df); tab_model(r0, digits = 5, digits.p = 3)
+r0 = lm(political_affiliation ~  political_affiliation, df); tab_model(r0, digits = 5, digits.p = 3)
 
-lm_plot0 <- ggplot(data = df, aes(x = poli_rating, y = user_coef))+
+lm_plot0 <- ggplot(data = df, aes(x = political_affiliation, y = political_affiliation))+
   theme(plot.title = element_text(hjust = 0.5))+
   geom_smooth(method=lm,size = 1)+
   geom_point()+
-  labs(y = "Acrophily user_coefficient", colour = "                ", x = "Strength of Political Affiliation")+
+  labs(y = "Acrophily acro_coefficient", colour = "                ", x = "Strength of Political Affiliation")+
   cleanup
 
 lm_plot0
@@ -106,7 +125,7 @@ df_f <- df %>%
   mutate(sd_filter = scale(sentiment_average)) %>% 
   filter(abs(sd_filter) < 2)
 
-r1 = lm(user_coef ~  sentiment_average + scale(poli_rating), df); tab_model(r1, digits = 5, digits.p = 3, show.stat = TRUE)
+r1 = lm(acro_coef ~  sentiment_average + scale(political_affiliation), df); tab_model(r1, digits = 5, digits.p = 3, show.stat = TRUE)
 
 summary(r1)
 ee <- as.data.frame(Effect(c("sentiment_average"),r1,xlevels= 100))
@@ -128,7 +147,7 @@ df_f <- df %>%
   mutate(sd_filter = scale(tweets_log)) %>% 
   filter(abs(sd_filter) < 2)
 
-r2 = lm(user_coef ~  tweets_log + poli_rating, df); tab_model(r2, digits = 7, digits.p = 3, show.stat = TRUE)
+r2 = lm(acro_coef ~  tweets_log + political_affiliation, df); tab_model(r2, digits = 7, digits.p = 3, show.stat = TRUE)
 
 summary(r2)
 ee <- as.data.frame(Effect(c("tweets_log"),r2,xlevels= 100))
@@ -137,7 +156,7 @@ lm_plot2 <- ggplot(data = ee, aes(x = tweets_log, y = fit))+
   theme(plot.title = element_text(hjust = 0.5))+
   geom_ribbon(alpha=0.2, aes(ymin=lower,ymax=upper))+
   geom_smooth(method=lm,size = 1)+
-  labs(y = "Acrophily user_coefficient", colour = "                ", x = "Total Number of Tweets")+
+  labs(y = "Acrophily acro_coefficient", colour = "                ", x = "Total Number of Tweets")+
   cleanup
 
 lm_plot2
@@ -150,7 +169,9 @@ df_f <- df %>%
   mutate(sd_filter = scale(ratio_sensitive_tweets)) %>% 
   filter(abs(sd_filter) < 2)
 
-r3 = lm(user_coef ~  ratio_sensitive_tweets + poli_rating, df_f); tab_model(r3, digits = 7, digits.p = 3, show.stat = TRUE)
+table(df$ratio_sensitive_tweets)
+
+r3 = lm(acro_coef ~  ratio_sensitive_tweets + political_affiliation, df_f); tab_model(r3, digits = 7, digits.p = 3, show.stat = TRUE)
 summary(r3)
 ee <- as.data.frame(Effect(c("ratio_sensitive_tweets"),r3,xlevels= 100))
 
@@ -158,7 +179,7 @@ lm_plot2 <- ggplot(data = ee, aes(x = ratio_sensitive_tweets, y = fit))+
   theme(plot.title = element_text(hjust = 0.5))+
   geom_ribbon(alpha=0.2, aes(ymin=lower,ymax=upper))+
   geom_smooth(method=lm,size = 1)+
-  labs(y = "Acrophily user_coefficient", colour = "                ", x = "Ratio of Sensitive Tweets")+
+  labs(y = "Acrophily acro_coefficient", colour = "                ", x = "Ratio of Sensitive Tweets")+
   cleanup
 
 lm_plot2
@@ -170,7 +191,7 @@ df_f <- df %>%
   mutate(sd_filter = scale(followers_log)) %>% 
   filter(abs(sd_filter) < 2)
 
-r4 = lm(user_coef ~  followers_log + poli_rating, df_f); tab_model(r4, digits = 7, digits.p = 3, show.stat = TRUE)
+r4 = lm(acro_coef ~  followers_log + political_affiliation, df_f); tab_model(r4, digits = 7, digits.p = 3, show.stat = TRUE)
 summary(r4)
 ee <- as.data.frame(Effect(c("followers_log"),r3,xlevels= 100))
 
@@ -178,7 +199,7 @@ lm_plot3 <- ggplot(data = ee, aes(x = followers_log, y = fit))+
   theme(plot.title = element_text(hjust = 0.5))+
   geom_ribbon(alpha=0.2, aes(ymin=lower,ymax=upper))+
   geom_smooth(method=lm,size = 1)+
-  labs(y = "Acrophily user_coefficient", colour = "                ", x = "Number of Followers")+
+  labs(y = "Acrophily acro_coefficient", colour = "                ", x = "Number of Followers")+
   cleanup
 
 lm_plot3
@@ -191,7 +212,7 @@ df_f <- df %>%
   mutate(sd_filter = scale(following_log)) %>% 
   filter(abs(sd_filter) < 2)
 
-r5 = lm(user_coef ~  following_log + poli_rating, df_f); tab_model(r5, digits = 7, digits.p = 3, show.stat = TRUE)
+r5 = lm(acro_coef ~  following_log + political_affiliation, df_f); tab_model(r5, digits = 7, digits.p = 3, show.stat = TRUE)
 summary(r5)
 ee <- as.data.frame(Effect(c("following_log"),r3,xlevels= 100))
 
@@ -199,7 +220,7 @@ lm_plot3 <- ggplot(data = ee, aes(x = following_count, y = fit))+
   theme(plot.title = element_text(hjust = 0.5))+
   geom_ribbon(alpha=0.2, aes(ymin=lower,ymax=upper))+
   geom_smooth(method=lm,size = 1)+
-  labs(y = "Acrophily user_coefficient", colour = "                ", x = "Number of Followings")+
+  labs(y = "Acrophily acro_coefficient", colour = "                ", x = "Number of Followings")+
   cleanup
 
 lm_plot3
@@ -212,7 +233,7 @@ df_f <- df %>%
   mutate(sd_filter = scale(mentions_average_log)) %>% 
   filter(abs(sd_filter) < 2)
 
-r6 = lm(user_coef ~  mentions_average_log + poli_rating, df_f); tab_model(r6, digits = 7, digits.p = 3, show.stat = TRUE)
+r6 = lm(acro_coef ~  mentions_average_log + political_affiliation, df_f); tab_model(r6, digits = 7, digits.p = 3, show.stat = TRUE)
 summary(r6)
 ee <- as.data.frame(Effect(c("following_log"),r3,xlevels= 100))
 
@@ -220,7 +241,7 @@ lm_plot3 <- ggplot(data = ee, aes(x = following_log, y = fit))+
   theme(plot.title = element_text(hjust = 0.5))+
   geom_ribbon(alpha=0.2, aes(ymin=lower,ymax=upper))+
   geom_smooth(method=lm,size = 1)+
-  labs(y = "Acrophily user_coefficient", colour = "                ", x = "Average Number of Mentions")+
+  labs(y = "Acrophily acro_coefficient", colour = "                ", x = "Average Number of Mentions")+
   cleanup
 
 lm_plot3
