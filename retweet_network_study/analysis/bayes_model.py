@@ -84,9 +84,6 @@ def load_data(data_path, poli_affil=None):
                             'sim_condition_2': 'acrophily_min',
                            'sim_condition_3': 'acrophily_max'})
     
-    # Get threshold index starting at 0 for model:
-    df['threshold_idx'] = df['threshold'] - 1
-    
     # Scale threshold value:
     sc = StandardScaler()
     df['threshold'] = sc.fit_transform(df['threshold'].values.reshape(-1, 1))
@@ -98,9 +95,8 @@ def load_data(data_path, poli_affil=None):
 def run_model(df):
     
     # Get coords:
-    coords = {"threshold": np.unique(df['threshold_idx']), 
-          "user": np.unique(df['userid_idx']),
-         "obs_id": np.arange(len(df))}
+    coords = {"user": np.unique(df['userid_idx']),
+     "obs_id": np.arange(len(df))}
 
     # Run model:
     with pm.Model(coords=coords) as model:
@@ -109,36 +105,38 @@ def run_model(df):
         homoph = df['homophily']
         acroph_min = df['acrophily_min']
         acroph_max = df['acrophily_max']
+        thresh = df['threshold']
 
         # Indexes for varying intercepts for each user within each threshold:
         user_idx = pm.Data("user_idx", df['userid_idx'], dims="obs_id")
-        thresh_idx = pm.Data("thresh_idx", df['threshold_idx'], dims="obs_id")
 
         # Mean and tau for varying intercepts:
         mu_alpha = pm.Normal('mu', mu=0, sd=100)
         tau_alpha = pm.Gamma('tau', alpha=0.1, beta=0.1)
 
-        # Initialize varying intercepts with dims for each user w/in each threshold:
-        alpha = pm.Normal('alpha', mu=mu_alpha, tau=tau_alpha, dims=("user", "threshold"))
+        # Initialize varying intercepts with dims for each user:
+        alpha = pm.Normal('alpha', mu=mu_alpha, tau=tau_alpha, dims="user")
         
-        # Generate varying intercepts for each user w/in each threshold:
-        intercepts = alpha[user_idx, thresh_idx]
+        # Generate varying intercepts for each user:
+        intercepts = alpha[user_idx]
 
-        # Generate coefficients with uniform prior within -1 and 1:
+        # Generate coefficients with uniform prior within -100 and 100:
         b_homoph = pm.Uniform('homoph', lower=-100, upper=100)
         b_acroph_min = pm.Uniform('acroph_min', lower=-100, upper=100)
         b_acroph_max = pm.Uniform('acroph_max', lower=-100, upper=100)
+        b_thresh = pm.Uniform('thresh', lower=-100, upper=100)
 
         # Run logistic regression model with sigmoid activation function:
         p = pm.Deterministic('p', pm.math.sigmoid(intercepts + b_homoph*homoph + \
                                                   b_acroph_min*acroph_min + \
-                                                  b_acroph_max*acroph_max))
+                                                  b_acroph_max*acroph_max + \
+                                                  b_thresh*thresh))
 
         # Generate observations using model and actual outcomes:
         obs = pm.Bernoulli('obs', p=p, observed=df['more_extreme'])
 
         # Get trace to analyze results:
-        trace = pm.sample(10000, tune=10000, target_accept=0.99)
+        trace = pm.sample(5000, tune=5000, target_accept=0.99)
         
     return trace
 
@@ -146,7 +144,7 @@ def run_model(df):
 # Save trace plot:
 def save_trace_plot(trace, file_name, fig_path='figures'):
     
-    az.plot_trace(trace, var_names=['homoph', 'acroph_min', 'acroph_max'],
+    az.plot_trace(trace, var_names=['homoph', 'acroph_min', 'acroph_max', 'thresh'],
                  compact=True, figsize=(16, 14))
     plt.savefig(os.path.join(fig_path, file_name))
     
@@ -156,7 +154,7 @@ def save_summary_df(trace, data_path, file_name):
     
     file_path = os.path.join(data_path, file_name)
     
-    df = az.summary(trace, var_names=['homoph', 'acroph_min', 'acroph_max'])
+    df = az.summary(trace, var_names=['homoph', 'acroph_min', 'acroph_max', 'thresh'])
     df.to_csv(os.path.join(data_path, file_name))
     
 
