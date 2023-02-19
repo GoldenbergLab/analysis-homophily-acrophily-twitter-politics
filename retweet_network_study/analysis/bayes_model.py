@@ -69,7 +69,14 @@ def load_data(data_path, poli_affil=None):
     # Create dummy variable indicating whether peer is more extreme:
     df['more_extreme'] = np.where(df['peer_rating'] > df['orig_rating_ego'],
                                  1, 0)
-        
+    
+    # Set random seed and subset data down to random fraction of users:
+    np.random.seed(109)
+    users = np.unique(df['userid'])
+    n_users = len(users)
+    random_users = np.random.choice(users, size=int(0.5*n_users), replace=False)
+    df = df[df['userid'].isin(random_users)]
+ 
     # Factorize user ID to create index for each user:
     df['userid_idx'] = pd.factorize(df['userid'])[0]
     
@@ -136,7 +143,7 @@ def run_model(df):
         obs = pm.Bernoulli('obs', p=p, observed=df['more_extreme'])
 
         # Get trace to analyze results:
-        trace = pm.sample(2000, tune=2000, target_accept=0.95)
+        trace = pm.sample(1000, tune=1000, target_accept=0.95)
         
     return trace
 
