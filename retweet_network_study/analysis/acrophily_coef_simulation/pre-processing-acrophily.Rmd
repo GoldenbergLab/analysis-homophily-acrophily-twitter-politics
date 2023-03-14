@@ -1,0 +1,197 @@
+---
+title: "pre-processing-acrophily"
+author: "Jonas Paul Schöne"
+date: "1/8/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(Rmisc)
+library(tidyverse)
+library(jsonlite)
+library(car)
+library(stringr)
+library(zoo)
+
+rm(list = ls()) #Cleaning the R Environment, since the datasets are pretty big and can slow down the PC 
+options(scipen = 999)
+
+theme_set(theme_bw()) #simple black and white design
+
+path =  "sentiment_csv/" #path to the json data files -> Jonas PATH
+
+csv_files <- fs::dir_ls(path, regexp = "\\.csv$")
+
+df_tweets <- read.csv(csv_files[1])
+df_tweets$user_id <- as.character(df_tweets$user_id)
+df_tweets$tweet_id<- as.character(df_tweets$tweet_id)
+csv_files <- csv_files[-1]
+
+for (files in csv_files) {
+  df_concat <- read.csv(csv_files[files])
+  df_concat$user_id <- as.character(df_concat$user_id)
+  df_concat$tweet_id<- as.character(df_concat$tweet_id)
+  print(files)
+  df_tweets <- rbind(df_tweets,df_concat)
+}
+
+df_tweets$possibly_sensitive_fac <- ifelse(df_tweets$possibly_sensitive == "True", 1, 0)
+
+df_tweets$retweeted_status <- ifelse(df_tweets$retweeted_status == 1 , "True",
+                                     ifelse(df_tweets$retweeted_status == 0 , "False", df_tweets$retweeted_status))
+
+df_tweets$user_id <- as.numeric(df_tweets$user_id) 
+
+df_tweets$count <- 1
+
+df_liwc <-read.csv("user_csv/liwc-text.csv")
+
+df_liwc <- df_liwc %>% 
+  dplyr::select(WC,we,they,anx, anger, sad, social, power, death, swear)
+
+df_tweets <- cbind(df_tweets, df_liwc)
+
+df_agg <- df_tweets %>%
+  ungroup() %>% 
+  dplyr::group_by(user_id) %>% 
+  slice(1:200) %>% 
+  dplyr::summarize(username = last(username),
+            sensitive_tweets_count = sum(possibly_sensitive_fac, na.rm = TRUE),
+            number_of_collected_tweets = n(),
+            number_of_original_tweets = sum(count[retweeted_status == 0], na.rm = TRUE),
+            number_of_retweeted_tweets = sum(count[retweeted_status == 1], na.rm = TRUE),
+            retweets_average = mean(as.numeric(retweet_count), na.rm = TRUE),
+            mentions_average = mean(mentions_count, na.rm = TRUE),
+            WC_average = mean(WC, na.rm = TRUE),
+            we_average = mean(we, na.rm = TRUE),
+            they_average = mean(they, na.rm = TRUE),
+            anx_average = mean(anx, na.rm = TRUE),
+            anger_average = mean(anger, na.rm = TRUE),
+            sad_average = mean(sad, na.rm = TRUE),
+            social_average = mean(social, na.rm = TRUE),
+            power_average = mean(power, na.rm = TRUE),
+            death_average = mean(death, na.rm = TRUE),
+            swear_average = mean(swear, na.rm = TRUE),
+            total_sentiment_average = mean(compound, na.rm = TRUE),
+            original_sentiment_average = mean(compound[retweeted_status == "False"], na.rm = TRUE),
+            retweeted_sentiment_average = mean(compound[retweeted_status == "True"], na.rm = TRUE))
+  
+
+path_user =  "user_csv/user_info/" #path to the json data files -> Jonas PATH
+
+csv_files <- fs::dir_ls(path_user, regexp = "\\.csv$")
+df_user = csv_files %>% 
+  map_dfr(read_csv)
+
+head(df_user)
+         
+df_user <- df_user %>% 
+  dplyr::rename(tweets_count = statuses_count, following_count = friends_count) %>% 
+  mutate(created_at = as.numeric(str_sub(created_at, start= -4))) %>% 
+  dplyr::select(user_id,created_at, followers_count, following_count, tweets_count)
+
+df_final <- merge(df_user, df_agg)
+
+df_user_coef_pol <-read.csv("user_csv/user_coef_1_11_23.csv")
+
+df_user_coef_pol <- df_user_coef_pol %>% 
+  dplyr::rename(user_id = userid) %>% 
+  select(user_id, poli_rating)
+
+df_user_coef <-read.csv("user_csv/coef_Jonas_02.22.csv")
+
+df_final <- merge(df_final, df_user_coef, by = "user_id")
+df_final <- merge(df_final, df_user_coef_pol, by = "user_id")
+
+df_final <- df_final %>% 
+  dplyr::select(-username)
+
+write.csv(df_final, file = "user_csv/acrophily_SI_twitter.csv")
+
+```
+
+# Get more liberals
+
+```{r}
+options(scipen = 999)
+
+#df_user_coef <-read.csv("user_csv/user_coef.csv")
+#df_user <-read.csv("user_csv/renamed_users_table_twitter.csv")
+df <-read.csv("user_csv/acrophily_SI_twitter.csv")
+
+ df <- df_user_coef %>%
+   na.omit() %>%
+  # filter(poli_affil == "left") %>% 
+   dplyr::rename(user_id = userid) %>% 
+   dplyr::select(user_id) %>% 
+   slice(., sample(1:n()))
+
+#df <- subset(df, !(user_id %in% df_user$user_id))
+
+write.table(df, file = "user_ids.txt", sep = "\t",
+            row.names = FALSE, col.names = FALSE)
+
+```
+
+# Prepare LIWC
+
+```{r}
+library(Rmisc)
+library(tidyverse)
+library(jsonlite)
+library(car)
+library(stringr)
+library(zoo)
+
+rm(list = ls()) #Cleaning the R Environment, since the datasets are pretty big and can slow down the PC 
+options(scipen = 999)
+
+theme_set(theme_bw()) #simple black and white design
+
+path =  "sentiment_csv/" #path to the json data files -> Jonas PATH
+
+csv_files <- fs::dir_ls(path, regexp = "\\.csv$")
+
+df_tweets <- read.csv(csv_files[1])
+df_tweets$user_id <- as.character(df_tweets$user_id)
+df_tweets$tweet_id<- as.character(df_tweets$tweet_id)
+csv_files <- csv_files[-1]
+
+for (files in csv_files) {
+  df_concat <- read.csv(csv_files[files])
+  df_concat$user_id <- as.character(df_concat$user_id)
+  df_concat$tweet_id<- as.character(df_concat$tweet_id)
+  print(files)
+  df_tweets <- rbind(df_tweets,df_concat)
+}
+
+df_liwc <- df_tweets %>% 
+  select(X, text)
+
+write.csv(df_liwc, file = "user_csv/raw-text.csv")
+```
+# Calculating Coefficient
+
+```{r}
+options(scipen = 999)
+
+df_rt <- read.csv("user_csv/rt_data/rt_data_processed.csv")
+
+df_rt$acro_score <- df_rt$orig_rating_peer - df_rt$orig_rating_ego 
+
+df_rt$acro_score_wheight <- df_rt$acro_score * df_rt$rt
+
+df_rt <- df_rt %>% 
+  dplyr::rename(user_id = userid) %>% 
+  dplyr::group_by(user_id) %>% 
+  dplyr::summarize(user_coef = mean(acro_score),
+                   user_coef_weighted = mean(acro_score_wheight),
+                   poli_affil = last(poli_affil))
+
+write.csv(df_rt, file = "user_csv/coef_Jonas_02.22.csv")
+```
+

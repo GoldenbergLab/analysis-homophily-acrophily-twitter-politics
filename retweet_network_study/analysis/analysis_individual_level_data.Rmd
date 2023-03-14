@@ -71,11 +71,11 @@ numbers = read_csv ('../data/acrophily_sim_indiv.csv')
 
 table(numbers$poli_affil)
 
-des = numbers %>% 
+des = da %>% 
   filter(threshold <6) %>% 
-  group_by (userid) %>% 
+  group_by (id) %>% 
   slice(1) %>% 
-  drop_na(userid)
+  drop_na(id)
 
 table(des$poli_affil)
 
@@ -105,12 +105,13 @@ dh_des = dh %>%
 ```{r politial affiliation }
 
 
-da_des %>% 
+des %>% 
   mutate(poli_affil = ifelse(poli == 'right', 'Conservatives', 'Liberals')) %>%
-  ggplot(aes(x=ego_empirical,  color=poli)) +
+  ggplot(aes(x=ego_empirical,  color=poli_affil)) +
   geom_histogram(fill='transparent') +
   facet_wrap(~poli_affil) +
-   annotate("text", x=0.22, y = -1000, label= "Moderate") + 
+  scale_fill_manual(values = c("blue", "red"))+
+  annotate("text", x=0.22, y = -1000, label= "Moderate") + 
   annotate("text", x=1.82, y=-1000, label= "Extreme") + 
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, face="bold", size = 16),
@@ -121,7 +122,7 @@ da_des %>%
         axis.title.x = element_text( vjust=0.5, size=14),
         strip.text = element_text(size = 14))+
     labs(x='', y='Count',
-       title='Users Political Affiliation', color = '')
+       title="Users' Political Affiliation")
 
 
 ggsave('../figures/user_poli_ratings.jpg', width = 9, height = 6)
